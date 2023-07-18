@@ -7,57 +7,54 @@ Config.ConductorJob = 'conductor' --job title of who can spawn a train
 Config.Trains = {
     {
         model = 'appleseed_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 30, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'bountyhunter_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
-    },
-    {
-        model = 'dummy_engine_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'engine_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'ghost_train_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'gunslinger3_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'gunslinger4_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'handcart_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'industry2_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'minecart_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'prisoner_escort_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'trolley_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     },
     {
         model = 'winter4_config',
-        speedRange = {1, 10} --1 is the lowest 10 is the highest
+        maxSpeed = 10, --max speed the train can go 30 is highest game allows
     }
 }
+Config.TrainDespawnDist = 200 --the maximum dist the conductor can be before the train despawns
 
 Config.Stations = {
     { --valentine

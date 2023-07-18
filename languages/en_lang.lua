@@ -22,5 +22,6 @@ Locales["en_lang"] = {
     backwardEnabled = 'Backward Enabled',
     backwardDisabled = 'Backward Disabled',
     backwardsIsOn = 'Failed! Backwards is currently enabled!',
-    forwardsIsOn = 'Failed! Forwards is currently enabled!'
+    forwardsIsOn = 'Failed! Forwards is currently enabled!',
+    drivingMenu = 'Conductor Menu'
 }

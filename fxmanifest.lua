@@ -19,3 +19,7 @@ client_scripts {
   "/client/client.lua",
   '/client/menuSetup.lua'
 }
+
+files {
+  'imgs/trainImg.png'
+}

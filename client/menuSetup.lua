@@ -22,7 +22,9 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
-            title = _U("trainStation"),
+            title = "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 8vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainStation") .. "</div>"
+            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             align = 'top-left',
             elements = elements,
         },
@@ -63,7 +65,9 @@ function chooseTrainMenu()
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
-            title      = _U("trainMenu"),
+            title      = "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
+            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
@@ -96,7 +100,9 @@ function drivingTrainMenu(trainConfigTable)
     local forwardActive, backwardActive = false, false
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
-            title = _U("trainStation"),
+            title =  "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 7vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("drivingMenu") .. "</div>"
+            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -23vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             align = 'top-left',
             elements = elements,
         },
@@ -152,3 +158,40 @@ function drivingTrainMenu(trainConfigTable)
             end
         end)
 end
+
+local on = false
+RegisterCommand('trackSwitch', function()
+    ------- Functional Track Switching -----------
+    if CreatedTrain ~= nil or false then
+        local trackModels = {
+            {model = 'FREIGHT_GROUP'},
+            {model = 'TRAINS3'},
+            {model = 'BRAITHWAITES2_TRACK_CONFIG'},
+            {model = 'TRAINS_OLD_WEST01'},
+            {model = 'TRAINS_OLD_WEST03'},
+            {model = 'TRAINS_NB1'},
+            {model = 'TRAINS_INTERSECTION1_ANN'},
+        }
+        if not on then
+            local counter = 0
+            repeat
+                for k, v in pairs(trackModels) do
+                    local trackHash = joaat(v.model)
+                    Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, true)
+                end
+                counter = counter + 1
+            until counter >= 100
+            on = true
+        else
+            local counter = 0
+            repeat
+                for k, v in pairs(trackModels) do
+                    local trackHash = joaat(v.model)
+                    Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, false)
+                end
+                counter = counter + 1
+            until counter >= 100
+            on = false
+        end
+    end
+end)

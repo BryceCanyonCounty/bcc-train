@@ -86,18 +86,21 @@ function chooseTrainMenu()
         end)
 end
 
+local on = false --used for track switching
 function drivingTrainMenu(trainConfigTable)
     MenuData.CloseAll()
     inMenu = false --so this menu doesnt close
 
     local elements = {
         { label = _U("speed"), value = 0, desc = _U("speed_desc"), type = 'slider', min = 0, max = trainConfigTable.maxSpeed, hop = 1.0 },
-        { label = _U("forward"), value = 'forward', desc = _U("forward_desc") },
-        { label = _U("backward"), value = 'backward', desc = _U("backward_desc") }
+        { label = _U("switchTrack"), value = 'switchtrack', desc = _U("switchTrack_desc") }
     }
+    if Config.CruiseControl then
+        table.insert(elements, { label = _U("forward"), value = 'forward', desc = _U("forward_desc") })
+        table.insert(elements, { label = _U("backward"), value = 'backward', desc = _U("backward_desc") })
+    end
 
-    local speed
-    local forwardActive, backwardActive = false, false
+    local forwardActive, backwardActive, speed = false, false, 0
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
             title =  "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 7vh;' src='nui://bcc-train/imgs/trainImg.png'>"
@@ -148,6 +151,40 @@ function drivingTrainMenu(trainConfigTable)
                     else
                         VORPcore.NotifyRightTip(_U("forwardsIsOn"), 4000)
                     end
+                end,
+                ['switchtrack'] = function()
+                    local trackModels = {
+                        {model = 'FREIGHT_GROUP'},
+                        {model = 'TRAINS3'},
+                        {model = 'BRAITHWAITES2_TRACK_CONFIG'},
+                        {model = 'TRAINS_OLD_WEST01'},
+                        {model = 'TRAINS_OLD_WEST03'},
+                        {model = 'TRAINS_NB1'},
+                        {model = 'TRAINS_INTERSECTION1_ANN'},
+                    }
+                    if not on then
+                        local counter = 0
+                        repeat
+                            for k, v in pairs(trackModels) do
+                                local trackHash = joaat(v.model)
+                                Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, true)
+                            end
+                            counter = counter + 1
+                        until counter >= 100
+                        on = true
+                        VORPcore.NotifyRightTip(_U("switchingOn"), 4000)
+                    else
+                        local counter = 0
+                        repeat
+                            for k, v in pairs(trackModels) do
+                                local trackHash = joaat(v.model)
+                                Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, false)
+                            end
+                            counter = counter + 1
+                        until counter >= 100
+                        on = false
+                        VORPcore.NotifyRightTip(_U("switchingOn"), 4000)
+                    end
                 end
             }
 
@@ -155,12 +192,15 @@ function drivingTrainMenu(trainConfigTable)
                 selectedOption[data.current.value]()
             else --has to be done this way to get a vector menu option
                 speed = data.current.value
+                local setMaxSpeed = speed + .1
+                if setMaxSpeed > 30.0 then setMaxSpeed = 29.9 end
+                Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, setMaxSpeed)
             end
         end)
 end
 
-local on = false
-RegisterCommand('trackSwitch', function()
+
+--[[RegisterCommand('trackSwitch', function()
     ------- Functional Track Switching -----------
     if CreatedTrain ~= nil or false then
         local trackModels = {
@@ -194,4 +234,4 @@ RegisterCommand('trackSwitch', function()
             on = false
         end
     end
-end)
+end)]]

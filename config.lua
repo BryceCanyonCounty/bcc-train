@@ -4,6 +4,8 @@ Config.defaultlang = 'en_lang'
 
 Config.ConductorJob = 'conductor' --job title of who can spawn a train
 
+Config.CruiseControl = false --set true if you want to allow cruise control
+
 Config.Trains = {
     {
         model = 'appleseed_config',

@@ -12,6 +12,7 @@ CreateThread(function()
                 sleep = false
                 PromptGroup:ShowGroup(_U("trainStation"))
                 if firstprompt:HasCompleted() then
+                    TriggerServerEvent('bcc-train:InsertCharIntoDB')
                     TriggerServerEvent('bcc-train:JobCheck')
                 end
             end

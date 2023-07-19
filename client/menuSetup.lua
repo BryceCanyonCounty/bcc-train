@@ -17,7 +17,8 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
     MenuData.CloseAll()
 
     local elements = {
-        { label = _U("spawnTrain"),         value = 'spawntrain',    desc = _U("spawnTrain_desc") }
+        { label = _U("ownedTrains"), value = 'ownedtrains', desc = _U("ownedTrains_desc") },
+        { label = _U("buyTrains"), value = 'buytrains', desc = _U("buyTrains_desc") }
     }
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
@@ -33,14 +34,13 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
                 _G[data.trigger]()
             end
             local selectedOption = {
-                ['spawntrain'] = function()
-                    VORPcore.RpcCall("bcc-train:AllowTrainSpawn", function(result)
-                        if result then
-                            chooseTrainMenu()
-                        else
-                           VORPcore.NotifyRightTip(_U("trainSpawnedAlrady"), 4000)
-                        end
-                    end)
+                ['ownedtrains'] = function()
+                    MenuData.CloseAll()
+                    TriggerServerEvent('bcc-train:GetOwnedTrains', 'viewOwned')
+                end,
+                ['buytrains'] = function()
+                    MenuData.CloseAll()
+                    TriggerServerEvent('bcc-train:GetOwnedTrains', 'buyTrain')
                 end
             }
 
@@ -50,17 +50,36 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
         end)
 end)
 
-function chooseTrainMenu()
+RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
     MenuData.CloseAll()
     local elements = {}
-
-    for k, trainInfo in pairs(Config.Trains) do
-        elements[#elements + 1] = {
-            label = _U("trainModel") .. ' ' .. trainInfo.model,
-            value = "train" .. k,
-            desc = "",
-            info = trainInfo
-        }
+    if string.len(ownedTrains.ownedTrains) == 2 then
+        for k, v in pairs(Config.Trains) do
+            elements[#elements + 1] = {
+                label = _U("trainModel") .. ' ' .. v.model .. ' ' .. _U("price") .. v.cost,
+                value = "train" .. k,
+                desc = "",
+                info = v
+            }
+        end
+    else
+        local ownedTrainsDecoded = json.decode(ownedTrains.ownedTrains)
+        for key, value in pairs(Config.Trains) do
+            local insert = true
+            for k, v in pairs(ownedTrainsDecoded) do
+                if tostring(value.model) == tostring(v.model) then
+                    insert = false
+                end
+            end
+            if insert then
+                elements[#elements + 1] = {
+                    label = _U("trainModel") .. ' ' .. value.model .. ' ' .. _U("price") .. value.cost,
+                    value = "train" .. key,
+                    desc = "",
+                    info = value
+                }
+            end
+        end
     end
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
@@ -78,13 +97,57 @@ function chooseTrainMenu()
                 _G[data.trigger]()
             end
             if data.current.value then
-                VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
-                TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', true)
-                MenuData.CloseAll() --have to be called above funct
-                spawnTrain(data.current.info)
+                MenuData.CloseAll()
+                TriggerServerEvent('bcc-train:BoughtTrainHandler', data.current.info)
             end
         end)
-end
+end)
+
+RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
+    MenuData.CloseAll()
+    local elements = {}
+    if string.len(ownedTrains.ownedTrains) == 2 then
+        VORPcore.NotifyRightTip(_U("noOwnedTrains"), 4000)
+    else
+        local ownedTrainsDecoded = json.decode(ownedTrains.ownedTrains)
+        for key, value in pairs(ownedTrainsDecoded) do
+            elements[#elements + 1] = {
+                label = _U("trainModel") .. ' ' .. value.model,
+                value = "train" .. key,
+                desc = "",
+                info = value
+            }
+        end
+    end
+
+    MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
+        {
+            title      = "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
+            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+            subtext    = _U("trainMenu_desc"),
+            align      = 'top-left',
+            elements   = elements,
+            itemHeight = "4vh"
+        },
+        function(data)
+            if data.current == 'backup' then
+                _G[data.trigger]()
+            end
+            if data.current.value then
+                VORPcore.RpcCall("bcc-train:AllowTrainSpawn", function(result)
+                    if result then
+                        VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
+                        TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', true)
+                        MenuData.CloseAll() --have to be called above funct
+                        spawnTrain(data.current.info)
+                    else
+                       VORPcore.NotifyRightTip(_U("trainSpawnedAlrady"), 4000)
+                    end
+                end)
+            end
+        end)
+end)
 
 local on = false --used for track switching
 function drivingTrainMenu(trainConfigTable)

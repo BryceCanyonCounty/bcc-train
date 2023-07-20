@@ -140,7 +140,13 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
                         VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
                         TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', true)
                         MenuData.CloseAll() --have to be called above funct
-                        spawnTrain(data.current.info)
+                        local configTable = nil
+                        for k, v in pairs(Config.Trains) do
+                            if data.current.info.model == v.model then
+                                configTable = v break
+                            end
+                        end
+                        spawnTrain(configTable, data.current.info)
                     else
                        VORPcore.NotifyRightTip(_U("trainSpawnedAlrady"), 4000)
                     end
@@ -150,7 +156,7 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
 end)
 
 local on = false --used for track switching
-function drivingTrainMenu(trainConfigTable)
+function drivingTrainMenu(trainConfigTable, trainDbTable)
     MenuData.CloseAll()
     inMenu = false --so this menu doesnt close
 
@@ -261,40 +267,3 @@ function drivingTrainMenu(trainConfigTable)
             end
         end)
 end
-
-
---[[RegisterCommand('trackSwitch', function()
-    ------- Functional Track Switching -----------
-    if CreatedTrain ~= nil or false then
-        local trackModels = {
-            {model = 'FREIGHT_GROUP'},
-            {model = 'TRAINS3'},
-            {model = 'BRAITHWAITES2_TRACK_CONFIG'},
-            {model = 'TRAINS_OLD_WEST01'},
-            {model = 'TRAINS_OLD_WEST03'},
-            {model = 'TRAINS_NB1'},
-            {model = 'TRAINS_INTERSECTION1_ANN'},
-        }
-        if not on then
-            local counter = 0
-            repeat
-                for k, v in pairs(trackModels) do
-                    local trackHash = joaat(v.model)
-                    Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, true)
-                end
-                counter = counter + 1
-            until counter >= 100
-            on = true
-        else
-            local counter = 0
-            repeat
-                for k, v in pairs(trackModels) do
-                    local trackHash = joaat(v.model)
-                    Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, false)
-                end
-                counter = counter + 1
-            until counter >= 100
-            on = false
-        end
-    end
-end)]]

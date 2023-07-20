@@ -23,7 +23,7 @@ CreateThread(function()
     end
 end)
 
-function spawnTrain(trainTable) --credit to rsg_trains for some of the logic here
+function spawnTrain(trainTable, dbTable) --credit to rsg_trains for some of the logic here
 
     local trainHash = joaat(trainTable.model)
     local trainWagons = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash)
@@ -65,7 +65,7 @@ function spawnTrain(trainTable) --credit to rsg_trains for some of the logic her
                 if GetPedInVehicleSeat(CreatedTrain, -1) == PlayerPedId() then
                     if not drivingMenuOpened then
                         drivingMenuOpened = true
-                        drivingTrainMenu(trainTable)
+                        drivingTrainMenu(trainTable, dbTable)
                     end
                 else
                     drivingMenuOpened = false

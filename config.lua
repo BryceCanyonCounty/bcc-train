@@ -6,14 +6,15 @@ Config.ConductorJob = 'conductor' --job title of who can spawn a train
 
 Config.CruiseControl = false --set true if you want to allow cruise control
 
+Config.TrainFuelItem = 'bagofcoal' --The item needed to fuel your train
 Config.Trains = {
     {
-        model = 'appleseed_config',
-        cost = 30,
-        maxFuel = 100,
-        maxCondition = 100,
+        model = 'appleseed_config', --model name of the train
+        cost = 30, --cost to buy the train
+        maxFuel = 100, --the maximum fuel amount the train can have
+        maxCondition = 100, --tha maximum condition the train can be at
         maxSpeed = 30, --max speed the train can go 30 is highest game allows
-    },
+    }, --You can add more trains by copy pasting this table and changing what you need (if you add more models/trains I can not garuntee they work as they have not been tested)
     {
         model = 'bountyhunter_config',
         cost = 30,

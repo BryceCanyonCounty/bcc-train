@@ -15,9 +15,9 @@ RegisterServerEvent('bcc-train:JobCheck', function()
   end
 end)
 
-local trainSpawned = false
+TrainSpawned = false
 VORPcore.addRpcCallback("bcc-train:AllowTrainSpawn", function(source, cb)
-  if trainSpawned then
+  if TrainSpawned then
     cb(false)
   else
     cb(true)
@@ -26,9 +26,22 @@ end)
 
 RegisterServerEvent('bcc-train:UpdateTrainSpawnVar', function(updateBool)
   if updateBool then
-    trainSpawned = true
+    TrainSpawned = true
   else
-    trainSpawned = false
+    TrainSpawned = false
+  end
+end)
+
+CreateThread(function() --Registering the inventories on server start
+  local result = MySQL.query.await("SELECT * FROM train")
+  for k, v in pairs(result) do
+    for key, value in pairs(Config.Trains) do
+      if v.trainModel == value.model then
+        VORPInv.removeInventory('Train_' .. v.trainid .. '_bcc-traininv')
+        Wait(50)
+        VORPInv.registerInventory('Train_' .. v.trainid .. '_bcc-traininv', _U("trainInv"), value.invLimit, true, true, true) break
+      end
+    end
   end
 end)
 
@@ -52,7 +65,23 @@ RegisterServerEvent('bcc-train:BoughtTrainHandler', function(trainTable)
     exports.oxmysql:execute("INSERT INTO train (`charidentifier`,`trainModel`,`fuel`,`condition`) VALUES (@charidentifier,@trainModel,@fuel,@trainCond)", param)
     Character.removeCurrency(0, trainTable.cost)
     VORPcore.NotifyRightTip(_source, _U("trainBought"), 4000)
+    Wait(1000)
+    local result = MySQL.query.await("SELECT * FROM train WHERE trainModel=@trainModel", param)
+    if #result > 0 then
+      for k, v in pairs(Config.Trains) do
+        if result[1].trainModel == v.model then
+          VORPInv.removeInventory('Train_' .. result[1].trainid .. '_bcc-traininv')
+          Wait(50)
+          VORPInv.registerInventory('Train_' .. result[1].trainid .. '_bcc-traininv', _U("trainInv"), v.invLimit, true, true, true) break
+        end
+      end
+    end
   else
     VORPcore.NotifyRightTip(_source, _U("notEnoughMoney"), 4000)
   end
+end)
+
+RegisterServerEvent('bcc-train:OpenTrainInv', function(trainId)
+  local _source = source
+  VORPInv.OpenInv(_source, 'Train_' .. trainId .. '_bcc-traininv')
 end)

@@ -32,5 +32,8 @@ Locales["en_lang"] = {
     price = 'Price: ',
     notEnoughMoney = 'You do not have enough cash!',
     trainBought = 'You purchased a train!',
-    noOwnedTrains = 'You do not own a train!'
+    noOwnedTrains = 'You do not own a train!',
+    trainInv = 'Train Inventory',
+    openInv = 'Open Inventory',
+    openInv_desc = 'Open your trains inventory.'
 }

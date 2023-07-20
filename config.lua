@@ -14,6 +14,8 @@ Config.Trains = {
         maxFuel = 100, --the maximum fuel amount the train can have
         maxCondition = 100, --tha maximum condition the train can be at
         maxSpeed = 30, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     }, --You can add more trains by copy pasting this table and changing what you need (if you add more models/trains I can not garuntee they work as they have not been tested)
     {
         model = 'bountyhunter_config',
@@ -21,6 +23,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'engine_config',
@@ -28,6 +32,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'ghost_train_config',
@@ -35,6 +41,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this trais
     },
     {
         model = 'gunslinger3_config',
@@ -42,6 +50,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'gunslinger4_config',
@@ -49,6 +59,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'handcart_config',
@@ -56,6 +68,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'industry2_config',
@@ -63,6 +77,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'minecart_config',
@@ -70,6 +86,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'prisoner_escort_config',
@@ -77,6 +95,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'trolley_config',
@@ -84,6 +104,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     },
     {
         model = 'winter4_config',
@@ -91,6 +113,8 @@ Config.Trains = {
         maxFuel = 100,
         maxCondition = 100,
         maxSpeed = 10, --max speed the train can go 30 is highest game allows
+        allowInventory = true, --if false train inventories will be disabled
+        invLimit = 100, --inventory limit for this train
     }
 }
 Config.TrainDespawnDist = 200 --the maximum dist the conductor can be before the train despawns

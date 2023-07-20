@@ -166,6 +166,9 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
         table.insert(elements, { label = _U("forward"), value = 'forward', desc = _U("forward_desc") })
         table.insert(elements, { label = _U("backward"), value = 'backward', desc = _U("backward_desc") })
     end
+    if trainConfigTable.allowInventory then
+        table.insert(elements, { label = _U("openInv"), value = 'openInv', desc = _U("openInv_desc") })
+    end
 
     local forwardActive, backwardActive, speed = false, false, 0
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
@@ -252,6 +255,9 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                         on = false
                         VORPcore.NotifyRightTip(_U("switchingOn"), 4000)
                     end
+                end,
+                ['openInv'] = function()
+                    TriggerServerEvent('bcc-train:OpenTrainInv', trainDbTable.trainid)
                 end
             }
 

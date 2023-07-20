@@ -84,13 +84,13 @@ function spawnTrain(trainTable, dbTable) --credit to rsg_trains for some of the 
 end
 
 --[[ TODO
-Multiple locations rhodes, valentine, saint denis (make inventories accessible by all conductors)
-Refueling the train (Make take coal item so inv is useful)
-Mainting the train (make take oil/items to make inv useful)
-Clean the train station (make take cleaning item so inv is useful)
-Supply mission (spawn train that has cargo and have it delivered to town only works if no trains are out ofcourse)
-Change direction on track on train spawn
-Inventory for each individual train(use the moddel + charid to index it)
+- Multiple locations rhodes, valentine, saint denis (make inventories accessible by all conductors)
+- Refueling the train (Make take coal item so inv is useful)
+- Mainting the train (make take oil/items to make inv useful)
+- Clean the train station (make take cleaning item so inv is useful)
+- Supply mission (spawn train that has cargo and have it delivered to town only works if no trains are out ofcourse)
+- Change direction on track on train spawn
+- Make the big bridge explodeable using rayfire thnx to jannings syn it and make trains stop before it reaches the bridge if blown(also make export for other scripts to see if its blown or not)
 ]]
 
 --[[DONE
@@ -99,4 +99,6 @@ Switching Tracks (Done)
 Modifiable Speed ofcourse (Done)
 Delete train if the spawned player leaves or is too far away (Done)
 Cruise control (Done)
+- Inventory for each individual train(done)
+- Export to check if a train is out for other scripts(done)
 ]]

@@ -53,7 +53,7 @@ end)
 RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
     MenuData.CloseAll()
     local elements = {}
-    if string.len(ownedTrains.ownedTrains) == 2 then
+    if #ownedTrains <= 0 then
         for k, v in pairs(Config.Trains) do
             elements[#elements + 1] = {
                 label = _U("trainModel") .. ' ' .. v.model .. ' ' .. _U("price") .. v.cost,
@@ -63,11 +63,10 @@ RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
             }
         end
     else
-        local ownedTrainsDecoded = json.decode(ownedTrains.ownedTrains)
         for key, value in pairs(Config.Trains) do
             local insert = true
-            for k, v in pairs(ownedTrainsDecoded) do
-                if tostring(value.model) == tostring(v.model) then
+            for k, v in pairs(ownedTrains) do
+                if value.model == v.trainModel then
                     insert = false
                 end
             end
@@ -106,13 +105,12 @@ end)
 RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
     MenuData.CloseAll()
     local elements = {}
-    if string.len(ownedTrains.ownedTrains) == 2 then
+    if #ownedTrains <= 0 then
         VORPcore.NotifyRightTip(_U("noOwnedTrains"), 4000)
     else
-        local ownedTrainsDecoded = json.decode(ownedTrains.ownedTrains)
-        for key, value in pairs(ownedTrainsDecoded) do
+        for key, value in pairs(ownedTrains) do
             elements[#elements + 1] = {
-                label = _U("trainModel") .. ' ' .. value.model,
+                label = _U("trainModel") .. ' ' .. value.trainModel,
                 value = "train" .. key,
                 desc = "",
                 info = value
@@ -142,7 +140,7 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
                         MenuData.CloseAll() --have to be called above funct
                         local configTable = nil
                         for k, v in pairs(Config.Trains) do
-                            if data.current.info.model == v.model then
+                            if data.current.info.trainModel == v.model then
                                 configTable = v break
                             end
                         end

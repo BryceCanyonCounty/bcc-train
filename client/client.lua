@@ -12,7 +12,6 @@ CreateThread(function()
                 sleep = false
                 PromptGroup:ShowGroup(_U("trainStation"))
                 if firstprompt:HasCompleted() then
-                    TriggerServerEvent('bcc-train:InsertCharIntoDB')
                     TriggerServerEvent('bcc-train:JobCheck')
                 end
             end
@@ -84,15 +83,20 @@ function spawnTrain(trainTable, dbTable) --credit to rsg_trains for some of the 
     end
 end
 
---[[
-Conductor job (done/checking for)
+--[[ TODO
 Multiple locations rhodes, valentine, saint denis (make inventories accessible by all conductors)
-Switching Tracks
-Modifiable Speed ofcourse
 Refueling the train (Make take coal item so inv is useful)
 Mainting the train (make take oil/items to make inv useful)
 Clean the train station (make take cleaning item so inv is useful)
 Supply mission (spawn train that has cargo and have it delivered to town only works if no trains are out ofcourse)
-Delete train if the spawned player leaves or is too far away (done)
-Cruise control
+Change direction on track on train spawn
+Inventory for each individual train(use the moddel + charid to index it)
+]]
+
+--[[DONE
+Conductor job (done/checking for)
+Switching Tracks (Done)
+Modifiable Speed ofcourse (Done)
+Delete train if the spawned player leaves or is too far away (Done)
+Cruise control (Done)
 ]]

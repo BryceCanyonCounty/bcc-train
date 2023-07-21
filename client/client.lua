@@ -1,4 +1,4 @@
-CreatedTrain = nil
+CreatedTrain, TrainFuel, TrainId, TrainConfigtable = nil, nil, nil, nil
 CreateThread(function()
     SetRandomTrains(false)
     local PromptGroup = VORPutils.Prompts:SetupPromptGroup()
@@ -26,6 +26,9 @@ function spawnTrain(trainTable, dbTable) --credit to rsg_trains for some of the 
 
     local trainHash = joaat(trainTable.model)
     local trainWagons = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash)
+    TrainFuel = dbTable.fuel
+    TrainId = dbTable.trainid
+    TrainConfigtable = trainTable
 	for wagonIndex = 0, trainWagons - 1 do
 		local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
 		while not HasModelLoaded(trainWagonModel) do
@@ -42,6 +45,7 @@ function spawnTrain(trainTable, dbTable) --credit to rsg_trains for some of the 
 	local bliphash = -399496385
 	local blip = Citizen.InvokeNative(0x23f74c2fda6e7c61, bliphash, CreatedTrain) -- blip for train
 	SetBlipScale(blip, 1.5)
+    TriggerEvent('bcc-train:FuelDecreaseHandler')
 
     local drivingMenuOpened = false
     while DoesEntityExist(CreatedTrain) do --done to check if it has been deleted via the command
@@ -56,6 +60,7 @@ function spawnTrain(trainTable, dbTable) --credit to rsg_trains for some of the 
                 VORPcore.NotifyRightTip(_U("tooFarFromTrain"), 4000)
                 TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false)
                 RemoveBlip(blip)
+                MenuData.CloseAll()
                 DeleteEntity(CreatedTrain) break
             end
         elseif dist < 10 then
@@ -83,14 +88,33 @@ function spawnTrain(trainTable, dbTable) --credit to rsg_trains for some of the 
     end
 end
 
+AddEventHandler('bcc-train:FuelDecreaseHandler', function()
+    while DoesEntityExist(CreatedTrain) do
+        Wait(5)
+        if EngineStarted then
+            if TrainFuel > 0 then
+                Wait(Config.FuelSettings.FuelDecreaseTime)
+                TriggerServerEvent('bcc-train:DecTrainFuel', TrainId)
+            else --for some reason this only triggers on -5 db but thats ok for now
+                Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
+            end
+        end
+    end
+end)
+
+RegisterNetEvent('bcc-train:CleintFuelUpdate', function(fuel)
+    TrainFuel = fuel
+end)
+
 --[[ TODO
 - Multiple locations rhodes, valentine, saint denis (make inventories accessible by all conductors)
-- Refueling the train (Make take coal item so inv is useful)
 - Mainting the train (make take oil/items to make inv useful)
 - Clean the train station (make take cleaning item so inv is useful)
 - Supply mission (spawn train that has cargo and have it delivered to town only works if no trains are out ofcourse)
 - Change direction on track on train spawn
-- Make the big bridge explodeable using rayfire thnx to jannings syn it and make trains stop before it reaches the bridge if blown(also make export for other scripts to see if its blown or not)
+- Investigate this working on the western/armadillo rails
+- Make the big bridge explodeable using rayfire thnx to jannings sync it and make trains stop before it reaches the bridge if blown(also make export for other scripts to see if its blown or not)
+- Webhooking
 ]]
 
 --[[DONE
@@ -101,4 +125,5 @@ Delete train if the spawned player leaves or is too far away (Done)
 Cruise control (Done)
 - Inventory for each individual train(done)
 - Export to check if a train is out for other scripts(done)
+- Refueling the train (Make take coal item so inv is useful) (Done)
 ]]

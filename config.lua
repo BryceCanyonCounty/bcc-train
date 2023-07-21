@@ -6,7 +6,14 @@ Config.ConductorJob = 'conductor' --job title of who can spawn a train
 
 Config.CruiseControl = false --set true if you want to allow cruise control
 
-Config.TrainFuelItem = 'bagofcoal' --The item needed to fuel your train
+Config.FuelSettings = {
+    TrainFuelItem = 'bagofcoal', --db name of the item needed to fuel the train
+    TrainFuelItemDisplayName = 'Bag of Coal', --display name of the item
+    TrainFuelItemAmount = 5, --How many of the item it will take to fuel the train
+    FuelDecreaseTime = 30000, --time in ms of how often the trains fuel goes down
+    FuelDecreaseAmount = 5 --amount of fuel to decrease
+}
+
 Config.Trains = {
     {
         model = 'appleseed_config', --model name of the train

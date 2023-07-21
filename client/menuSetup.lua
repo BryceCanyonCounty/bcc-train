@@ -1,5 +1,6 @@
 ----- Close Menu When Backspaced Out -----
 local inMenu = false
+EngineStarted = false
 
 AddEventHandler('bcc-train:MenuClose', function()
     while inMenu do
@@ -160,7 +161,11 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
 
     local elements = {
         { label = _U("speed"), value = 0, desc = _U("speed_desc"), type = 'slider', min = 0, max = trainConfigTable.maxSpeed, hop = 1.0 },
-        { label = _U("switchTrack"), value = 'switchtrack', desc = _U("switchTrack_desc") }
+        { label = _U("switchTrack"), value = 'switchtrack', desc = _U("switchTrack_desc") },
+        { label = _U("checkFuel"), value = 'checkFuel', desc = _U("checkFuel_desc") },
+        { label = _U("addFuel"), value = 'addFuel', desc = _U("addFuel_desc") },
+        { label = _U("startEnging"), value = 'startEngine', desc = _U("startEnging_desc") },
+        { label = _U("stopEngine"), value = 'stopEngine', desc = _U("stopEngine_desc") }
     }
     if Config.CruiseControl then
         table.insert(elements, { label = _U("forward"), value = 'forward', desc = _U("forward_desc") })
@@ -258,6 +263,24 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 end,
                 ['openInv'] = function()
                     TriggerServerEvent('bcc-train:OpenTrainInv', trainDbTable.trainid)
+                end,
+                ['checkFuel'] = function()
+                    TriggerServerEvent('bcc-train:CheckTrainFuel', TrainId, TrainConfigtable)
+                end,
+                ['addFuel'] = function()
+                    TriggerServerEvent('bcc-train:FuelTrain', TrainId, TrainConfigtable)
+                end,
+                ['stopEngine'] = function()
+                    VORPcore.NotifyRightTip(_U("engineStopped"), 4000)
+                    EngineStarted = false
+                    Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
+                end,
+                ['startEngine'] = function()
+                    VORPcore.NotifyRightTip(_U("engineStarted"), 4000)
+                    EngineStarted = true
+                    local setMaxSpeed = speed + .1
+                    if setMaxSpeed > 30.0 then setMaxSpeed = 29.9 end
+                    Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, setMaxSpeed)
                 end
             }
 

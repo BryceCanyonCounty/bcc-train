@@ -9,6 +9,7 @@
 - Each train has thier own inventory
 - Config option to allow cruise control
 - Configurable train speeds
+- Trains need fuel to run
 
 ## Api
 ### Check if train spawned!
@@ -17,3 +18,6 @@
 local retval = exports['bcc-train']:CheckIfTrainIsSpawned()
 ```
 - Returns true if a train has been spawned false if no train is spawned/in-use
+
+# Side Notes
+- Thanks to our in house designer Lady Grey for all the images

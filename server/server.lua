@@ -4,6 +4,7 @@ TriggerEvent("getCore", function(core)
 end)
 VORPInv = {}
 VORPInv = exports.vorp_inventory:vorp_inventoryApi()
+BccUtils = exports['bcc-utils'].initiate()
 
 RegisterServerEvent('bcc-train:JobCheck', function()
   local _source = source
@@ -27,8 +28,10 @@ end)
 RegisterServerEvent('bcc-train:UpdateTrainSpawnVar', function(updateBool)
   if updateBool then
     TrainSpawned = true
+    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"), _U("trainSpawnedwebMain"))
   else
     TrainSpawned = false
+    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"), _U("trainNotSpawnedWeb"))
   end
 end)
 
@@ -65,6 +68,7 @@ RegisterServerEvent('bcc-train:BoughtTrainHandler', function(trainTable)
     exports.oxmysql:execute("INSERT INTO train (`charidentifier`,`trainModel`,`fuel`,`condition`) VALUES (@charidentifier,@trainModel,@fuel,@trainCond)", param)
     Character.removeCurrency(0, trainTable.cost)
     VORPcore.NotifyRightTip(_source, _U("trainBought"), 4000)
+    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("charIdWeb") .. Character.charIdentifier, _U("boughtTrainWeb") .. trainTable.model)
   else
     VORPcore.NotifyRightTip(_source, _U("notEnoughMoney"), 4000)
   end

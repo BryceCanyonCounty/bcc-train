@@ -2,6 +2,8 @@ Config = {}
 
 Config.defaultlang = 'en_lang'
 
+Config.WebhookLink = 'yourLink' --Insert your webhook link to enable webhooking
+
 Config.ConductorJob = 'conductor' --job title of who can spawn a train
 
 Config.CruiseControl = false --set true if you want to allow cruise control

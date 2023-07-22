@@ -190,41 +190,45 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
             end
             local selectedOption = {
                 ['forward'] = function()
-                    if not backwardActive then
-                        if not forwardActive then
-                            forwardActive = true
-                            VORPcore.NotifyRightTip(_U("forwardEnabled"), 4000)
-                            while forwardActive do
-                                Wait(100)
-                                if speed ~= 0 and speed ~= nil then --stops error
-                                    SetTrainSpeed(CreatedTrain, speed + .1)
+                    if EngineStarted then
+                        if not backwardActive then
+                            if not forwardActive then
+                                forwardActive = true
+                                VORPcore.NotifyRightTip(_U("forwardEnabled"), 4000)
+                                while forwardActive do
+                                    Wait(100)
+                                    if speed ~= 0 and speed ~= nil then --stops error
+                                        SetTrainSpeed(CreatedTrain, speed + .1)
+                                    end
                                 end
+                            else
+                                VORPcore.NotifyRightTip(_U("forwardDisbaled"), 4000)
+                                forwardActive = false
                             end
                         else
-                            VORPcore.NotifyRightTip(_U("forwardDisbaled"), 4000)
-                            forwardActive = false
+                            VORPcore.NotifyRightTip(_U("backwardsIsOn"), 4000)
                         end
-                    else
-                        VORPcore.NotifyRightTip(_U("backwardsIsOn"), 4000)
                     end
                 end,
                 ['backward'] = function()
-                    if not forwardActive then
-                        if not backwardActive then
-                            backwardActive = true
-                            VORPcore.NotifyRightTip(_U("backwardEnabled"), 4000)
-                            while backwardActive do
-                                Wait(100)
-                                if speed ~= 0 and speed ~= nil then --stops error
-                                    SetTrainSpeed(CreatedTrain, speed + .1 - speed * 2)
+                    if EngineStarted then
+                        if not forwardActive then
+                            if not backwardActive then
+                                backwardActive = true
+                                VORPcore.NotifyRightTip(_U("backwardEnabled"), 4000)
+                                while backwardActive do
+                                    Wait(100)
+                                    if speed ~= 0 and speed ~= nil then --stops error
+                                        SetTrainSpeed(CreatedTrain, speed + .1 - speed * 2)
+                                    end
                                 end
+                            else
+                                VORPcore.NotifyRightTip(_U("backwardDisabled"), 4000)
+                                backwardActive = false
                             end
                         else
-                            VORPcore.NotifyRightTip(_U("backwardDisabled"), 4000)
-                            backwardActive = false
+                            VORPcore.NotifyRightTip(_U("forwardsIsOn"), 4000)
                         end
-                    else
-                        VORPcore.NotifyRightTip(_U("forwardsIsOn"), 4000)
                     end
                 end,
                 ['switchtrack'] = function()
@@ -273,14 +277,11 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 ['stopEngine'] = function()
                     VORPcore.NotifyRightTip(_U("engineStopped"), 4000)
                     EngineStarted = false
-                    Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
                 end,
                 ['startEngine'] = function()
                     VORPcore.NotifyRightTip(_U("engineStarted"), 4000)
                     EngineStarted = true
-                    local setMaxSpeed = speed + .1
-                    if setMaxSpeed > 30.0 then setMaxSpeed = 29.9 end
-                    Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, setMaxSpeed)
+                    maxSpeedCalc(speed)
                 end
             }
 
@@ -288,9 +289,13 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 selectedOption[data.current.value]()
             else --has to be done this way to get a vector menu option
                 speed = data.current.value
-                local setMaxSpeed = speed + .1
-                if setMaxSpeed > 30.0 then setMaxSpeed = 29.9 end
-                Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, setMaxSpeed)
+                maxSpeedCalc(speed)
             end
         end)
+end
+
+function maxSpeedCalc(speed)
+    local setMaxSpeed = speed + .1
+    if setMaxSpeed > 30.0 then setMaxSpeed = 29.9 end
+    Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, setMaxSpeed)
 end

@@ -47,5 +47,10 @@ Locales["en_lang"] = {
     stopEngine_desc = 'Stop engine will turn your engine off',
     engineStarted = 'Engine Started',
     engineStopped = 'Engine Stopped',
-    fuelAdded = 'Train Refuled!'
+    fuelAdded = 'Train Refuled!',
+    charIdWeb = 'Char Id: ',
+    boughtTrainWeb = 'Bought Train Model: ',
+    trainSpawnedWeb = 'Bcc-Train',
+    trainSpawnedwebMain = 'Train has been spawned, and is in use!',
+    trainNotSpawnedWeb = 'Train despawned, and is no longer in use!'
 }

@@ -95,15 +95,27 @@ AddEventHandler('bcc-train:FuelDecreaseHandler', function()
             if TrainFuel > 0 then
                 Wait(Config.FuelSettings.FuelDecreaseTime)
                 TriggerServerEvent('bcc-train:DecTrainFuel', TrainId)
-            else --for some reason this only triggers on -5 db but thats ok for now
+                Wait(1000)
+            else
                 Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
             end
+        else
+            Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
         end
     end
 end)
 
 RegisterNetEvent('bcc-train:CleintFuelUpdate', function(fuel)
     TrainFuel = fuel
+end)
+
+------- Cleanup -----
+AddEventHandler("onResourceStop", function(resource)
+    if resource == GetCurrentResourceName() then
+        if DoesEntityExist(CreatedTrain) then
+            DeleteEntity(CreatedTrain)
+        end
+    end
 end)
 
 --[[ TODO
@@ -114,16 +126,17 @@ end)
 - Change direction on track on train spawn
 - Investigate this working on the western/armadillo rails
 - Make the big bridge explodeable using rayfire thnx to jannings sync it and make trains stop before it reaches the bridge if blown(also make export for other scripts to see if its blown or not)
-- Webhooking
+- Skill checks
 ]]
 
 --[[DONE
-Conductor job (done/checking for)
-Switching Tracks (Done)
-Modifiable Speed ofcourse (Done)
-Delete train if the spawned player leaves or is too far away (Done)
-Cruise control (Done)
+- Conductor job (done/checking for)
+- Switching Tracks (Done)
+- Modifiable Speed ofcourse (Done)
+- Delete train if the spawned player leaves or is too far away (Done)
+- Cruise control (Done)
 - Inventory for each individual train(done)
 - Export to check if a train is out for other scripts(done)
 - Refueling the train (Make take coal item so inv is useful) (Done)
+- Webhooking(Done)
 ]]

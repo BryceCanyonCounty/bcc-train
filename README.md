@@ -10,6 +10,7 @@
 - Config option to allow cruise control
 - Configurable train speeds
 - Trains need fuel to run
+- Maintain the train to keep it functional
 
 ## Api
 ### Check if train spawned!

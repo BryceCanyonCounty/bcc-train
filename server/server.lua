@@ -100,14 +100,34 @@ RegisterServerEvent('bcc-train:CheckTrainFuel', function(trainid, configTable)
   end
 end)
 
-RegisterServerEvent('bcc-train:DecTrainFuel', function(trainid)
+RegisterServerEvent('bcc-train:CheckTrainCond', function(trainid, configTable)
   local _source = source
-  local param = { ['trainId'] = trainid, ['decamount'] = Config.FuelSettings.FuelDecreaseAmount }
-  exports.oxmysql:execute('UPDATE train SET `fuel`=fuel - @decamount WHERE trainid=@trainId', param)
+  local param = { ['trainId'] = trainid }
+  local result = MySQL.query.await("SELECT * FROM train WHERE trainid=@trainId", param)
+  if #result > 0 then
+    VORPcore.NotifyRightTip(_source, result[1].condition .. ' / ' .. configTable.maxCondition)
+  end
+end)
+
+RegisterServerEvent('bcc-train:DecTrainFuel', function(trainid, trainFuel)
+  local _source = source
+  local param = { ['trainId'] = trainid, ['fuel'] = trainFuel - Config.FuelSettings.FuelDecreaseAmount }
+  exports.oxmysql:execute('UPDATE train SET fuel=@fuel WHERE trainid=@trainId', param)
   Wait(500)
   local result = MySQL.query.await("SELECT * FROM train WHERE trainid=@trainId", param)
   if #result > 0 then
     TriggerClientEvent('bcc-train:CleintFuelUpdate', _source, result[1].fuel)
+  end
+end)
+
+RegisterServerEvent('bcc-train:DecTrainCond', function(trainid, trainCondition)
+  local _source = source
+  local param = { ['trainId'] = trainid, ['cond'] = trainCondition - Config.ConditionSettings.CondDecreaseAmount }
+  exports.oxmysql:execute('UPDATE train SET `condition`=@cond WHERE trainid=@trainId', param)
+  Wait(500)
+  local result = MySQL.query.await("SELECT * FROM train WHERE trainid=@trainId", param)
+  if #result > 0 then
+    TriggerClientEvent('bcc-train:CleintCondUpdate', _source, result[1].condition)
   end
 end)
 
@@ -120,6 +140,20 @@ RegisterServerEvent('bcc-train:FuelTrain', function(trainId, configTable)
     exports.oxmysql:execute("UPDATE train SET `fuel`=@fuel WHERE trainid=@trainId", param)
     TriggerClientEvent('bcc-train:CleintFuelUpdate', _source, configTable.maxFuel)
     VORPcore.NotifyRightTip(_source, _U("fuelAdded"), 4000)
+  else
+    VORPcore.NotifyRightTip(_source, _U("noItem"), 4000)
+  end
+end)
+
+RegisterServerEvent('bcc-train:RepairTrain', function(trainId, configTable)
+  local _source = source
+  local itemCount = VORPInv.getItemCount(_source, Config.ConditionSettings.TrainCondItem)
+  if itemCount >= Config.ConditionSettings.TrainCondItemAmount then
+    VORPInv.subItem(_source, Config.ConditionSettings.TrainCondItem, Config.ConditionSettings.TrainCondItemAmount)
+    local param = { ['trainId'] = trainId, ['cond'] = configTable.maxCondition }
+    exports.oxmysql:execute("UPDATE train SET `condition`=@cond WHERE trainid=@trainId", param)
+    TriggerClientEvent('bcc-train:CleintCondUpdate', _source, configTable.maxCondition)
+    VORPcore.NotifyRightTip(_source, _U("trainRepaired"), 4000)
   else
     VORPcore.NotifyRightTip(_source, _U("noItem"), 4000)
   end

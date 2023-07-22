@@ -164,6 +164,8 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
         { label = _U("switchTrack"), value = 'switchtrack', desc = _U("switchTrack_desc") },
         { label = _U("checkFuel"), value = 'checkFuel', desc = _U("checkFuel_desc") },
         { label = _U("addFuel"), value = 'addFuel', desc = _U("addFuel_desc") },
+        { label = _U("checkCond"), value = 'checkCond', desc = _U("checkCond_desc") },
+        { label = _U("repairdTrain"), value = 'repairTrain', desc = _U("repairdTrain_desc") },
         { label = _U("startEnging"), value = 'startEngine', desc = _U("startEnging_desc") },
         { label = _U("stopEngine"), value = 'stopEngine', desc = _U("stopEngine_desc") }
     }
@@ -277,11 +279,18 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 ['stopEngine'] = function()
                     VORPcore.NotifyRightTip(_U("engineStopped"), 4000)
                     EngineStarted = false
+                    Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
                 end,
                 ['startEngine'] = function()
                     VORPcore.NotifyRightTip(_U("engineStarted"), 4000)
                     EngineStarted = true
                     maxSpeedCalc(speed)
+                end,
+                ['checkCond'] = function()
+                    TriggerServerEvent('bcc-train:CheckTrainCond', TrainId, TrainConfigtable)
+                end,
+                ['repairTrain'] = function()
+                    TriggerServerEvent('bcc-train:RepairTrain', TrainId, TrainConfigtable)
                 end
             }
 

@@ -52,5 +52,10 @@ Locales["en_lang"] = {
     boughtTrainWeb = 'Bought Train Model: ',
     trainSpawnedWeb = 'Bcc-Train',
     trainSpawnedwebMain = 'Train has been spawned, and is in use!',
-    trainNotSpawnedWeb = 'Train despawned, and is no longer in use!'
+    trainNotSpawnedWeb = 'Train despawned, and is no longer in use!',
+    checkCond = 'Check Condition',
+    checkCond_desc = 'Check the condition of your train.',
+    repairdTrain = 'Repair Train',
+    repairdTrain_desc = 'Repair your train? You need: ' .. Config.ConditionSettings.TrainCondItemDisplayName .. ' Amount: ' .. Config.ConditionSettings.TrainCondItemAmount,
+    trainRepaired = 'Train repaired!'
 }

@@ -16,6 +16,14 @@ Config.FuelSettings = {
     FuelDecreaseAmount = 5 --amount of fuel to decrease
 }
 
+Config.ConditionSettings = {
+    TrainCondItem = 'trainoil', --db name of the item needed to repair the train
+    TrainCondItemDisplayName = 'Train Oil', --display name of the item
+    TrainCondItemAmount = 5, --How many of the item it will take to repair the train
+    CondDecreaseTime = 30000, --time in ms of how often the trains condition goes down
+    CondDecreaseAmount = 5 --amount of cond to decrease
+}
+
 Config.Trains = {
     {
         model = 'appleseed_config', --model name of the train

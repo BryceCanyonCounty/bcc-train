@@ -7,7 +7,8 @@ AddEventHandler('bcc-train:MenuClose', function()
         Wait(5)
         if IsControlJustReleased(0, 0x156F7119) then
             inMenu = false
-            MenuData.CloseAll() break
+            MenuData.CloseAll()
+            break
         end
     end
 end)
@@ -18,16 +19,18 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
     MenuData.CloseAll()
 
     local elements = {
-        { label = _U("ownedTrains"), value = 'ownedtrains', desc = _U("ownedTrains_desc") },
-        { label = _U("buyTrains"), value = 'buytrains', desc = _U("buyTrains_desc") },
+        { label = _U("ownedTrains"),     value = 'ownedtrains',     desc = _U("ownedTrains_desc") },
+        { label = _U("buyTrains"),       value = 'buytrains',       desc = _U("buyTrains_desc") },
         { label = _U("deliveryMission"), value = 'deliveryMission', desc = _U("deliveryMission_desc") }
     }
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
-            title = "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 8vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainStation") .. "</div>"
-            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+            title =
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 8vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainStation") .. "</div>"
+                ..
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             align = 'top-left',
             elements = elements,
         },
@@ -97,9 +100,11 @@ RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
-            title      = "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
-            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+            title      =
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
+                ..
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
@@ -134,9 +139,11 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
-            title      = "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
-            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+            title      =
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
+                ..
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
@@ -154,12 +161,13 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
                         local configTable = nil
                         for k, v in pairs(Config.Trains) do
                             if data.current.info.trainModel == v.model then
-                                configTable = v break
+                                configTable = v
+                                break
                             end
                         end
                         switchDirectionMenu(configTable, data.current.info)
                     else
-                       VORPcore.NotifyRightTip(_U("trainSpawnedAlrady"), 4000)
+                        VORPcore.NotifyRightTip(_U("trainSpawnedAlrady"), 4000)
                     end
                 end)
             end
@@ -171,15 +179,17 @@ function switchDirectionMenu(configTable, menuTable)
     inMenu = false
 
     local elements = {
-        { label = _U("changeSpawnDir"), value = 'changeSpawnDir', desc = _U("changeSpawnDir_desc") },
+        { label = _U("changeSpawnDir"),   value = 'changeSpawnDir',   desc = _U("changeSpawnDir_desc") },
         { label = _U("noChangeSpawnDir"), value = 'noChangeSpawnDir', desc = _U("noChangeSpawnDir_desc") }
     }
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
-            title      = "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
-            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+            title      =
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
+                ..
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
@@ -207,14 +217,23 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
     inMenu = false --so this menu doesnt close
 
     local elements = {
-        { label = _U("speed"), value = 0, desc = _U("speed_desc"), type = 'slider', min = 0, max = trainConfigTable.maxSpeed, hop = 1.0 },
-        { label = _U("switchTrack"), value = 'switchtrack', desc = _U("switchTrack_desc") },
-        { label = _U("checkFuel"), value = 'checkFuel', desc = _U("checkFuel_desc") },
-        { label = _U("addFuel"), value = 'addFuel', desc = _U("addFuel_desc") },
-        { label = _U("checkCond"), value = 'checkCond', desc = _U("checkCond_desc") },
+        {
+            label = _U("speed"),
+            value = 0,
+            desc = _U("speed_desc"),
+            type = 'slider',
+            min = 0,
+            max =
+                trainConfigTable.maxSpeed,
+            hop = 1.0
+        },
+        { label = _U("switchTrack"),  value = 'switchtrack', desc = _U("switchTrack_desc") },
+        { label = _U("checkFuel"),    value = 'checkFuel',   desc = _U("checkFuel_desc") },
+        { label = _U("addFuel"),      value = 'addFuel',     desc = _U("addFuel_desc") },
+        { label = _U("checkCond"),    value = 'checkCond',   desc = _U("checkCond_desc") },
         { label = _U("repairdTrain"), value = 'repairTrain', desc = _U("repairdTrain_desc") },
-        { label = _U("startEnging"), value = 'startEngine', desc = _U("startEnging_desc") },
-        { label = _U("stopEngine"), value = 'stopEngine', desc = _U("stopEngine_desc") },
+        { label = _U("startEnging"),  value = 'startEngine', desc = _U("startEnging_desc") },
+        { label = _U("stopEngine"),   value = 'stopEngine',  desc = _U("stopEngine_desc") },
     }
     if Config.CruiseControl then
         table.insert(elements, { label = _U("forward"), value = 'forward', desc = _U("forward_desc") })
@@ -229,9 +248,11 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
     local forwardActive, backwardActive, speed = false, false, 0
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
-            title =  "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 7vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("drivingMenu") .. "</div>"
-            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -23vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+            title =
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 7vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("drivingMenu") .. "</div>"
+                ..
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -23vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             align = 'top-left',
             elements = elements,
         },
@@ -284,13 +305,13 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 end,
                 ['switchtrack'] = function()
                     local trackModels = {
-                        {model = 'FREIGHT_GROUP'},
-                        {model = 'TRAINS3'},
-                        {model = 'BRAITHWAITES2_TRACK_CONFIG'},
-                        {model = 'TRAINS_OLD_WEST01'},
-                        {model = 'TRAINS_OLD_WEST03'},
-                        {model = 'TRAINS_NB1'},
-                        {model = 'TRAINS_INTERSECTION1_ANN'},
+                        { model = 'FREIGHT_GROUP' },
+                        { model = 'TRAINS3' },
+                        { model = 'BRAITHWAITES2_TRACK_CONFIG' },
+                        { model = 'TRAINS_OLD_WEST01' },
+                        { model = 'TRAINS_OLD_WEST03' },
+                        { model = 'TRAINS_NB1' },
+                        { model = 'TRAINS_INTERSECTION1_ANN' },
                     }
                     if not on then
                         local counter = 0
@@ -346,6 +367,7 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                     RemoveBlip(TrainBlip)
                     MenuData.CloseAll()
                     DeleteEntity(CreatedTrain)
+                    hideHUD()
                 end
             }
 

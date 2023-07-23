@@ -74,7 +74,6 @@ function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for s
                     if not drivingMenuOpened then
                         drivingMenuOpened = true
                         drivingTrainMenu(trainTable, dbTable)
-                        print(trainTable.maxCondition)
                         showHUD(TrainCondition, trainTable.maxCondition, TrainFuel, trainTable.maxFuel)
                     end
                 else

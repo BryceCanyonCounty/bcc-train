@@ -6,3 +6,23 @@ exports('CheckIfTrainIsSpawned', function()
         return false
     end
 end)
+
+-- Get Train Entity
+exports('GetTrainEntity', function()
+    if TrainSpawned then
+        if TrainEntity ~= nil then
+            return TrainEntity
+        end
+    else
+        return false
+    end
+end)
+
+-- Check if baccus bridge destroyed
+exports('BacchusBridgeDestroyed', function()
+    if BridgeDestroyed then
+        return true
+    else
+        return false
+    end
+end)

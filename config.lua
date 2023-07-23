@@ -24,6 +24,14 @@ Config.ConditionSettings = {
     CondDecreaseAmount = 5 --amount of cond to decrease
 }
 
+Config.BacchusBridgeDestroying = {
+    enabled = true, --if true you will be able to blow up bacchus bridge!
+    coords = {x = 492.01, y = 1774.41, z = 182.5}, --coords of where you have to  place the dynamite
+    dynamiteItem = 'dynamite', --db name of the dynamite item
+    dynamiteItemAmount = 2, --amount needed to explode the bridge
+    explosionTimer = 30000 --time before the explosion happens
+}
+
 Config.Trains = {
     {
         model = 'appleseed_config', --model name of the train
@@ -141,5 +149,68 @@ Config.Stations = {
         coords = {x = -176.01, y = 627.86, z = 114.09},
         radius = 2, --keep this kind of low
         invLimit = 200
+    },
+    { --emerald station
+        coords = {x = 1525.18, y = 442.51, z = 90.68},
+        radius = 2,
+        invLimit = 50
+    },
+    { --flatneck station
+        coords = {x = -337.13, y = -360.63, z = 88.08},
+        radius = 2,
+        invLimit = 200
+    },
+    { --rhodes
+        coords = {x = 1225.77, y = -1296.45, z = 76.9},
+        radius = 2,
+        invLimit = 200
+    },
+    { --Saint Denis
+        coords = {x = 2747.5, y = -1398.89, z = 46.18},
+        radius = 2,
+        invLimit = 300
+    },
+    { --annesburge
+        coords = {x = 2938.98, y = 1282.05, z = 44.65},
+        radius = 2,
+        invLimit = 100
+    },
+    { --bacchus station
+        coords = {x = 582.49, y = 1681.07, z = 187.79},
+        radius = 2,
+        invLimit = 50
+    },
+    { --wallace station
+        coords = {x = -1299.39, y = 402.09, z = 95.38},
+        radius = 2,
+        invLimit = 50
+    },
+    { --riggs station
+        coords = {x = -1093.92, y = -576.97, z = 82.41},
+        radius = 2,
+        invLimit = 100
+    },
+    { --armadillo
+        coords = {x = -3729.1, y = -2602.83, z = -12.94},
+        radius = 2,
+        invLimit = 300
+    },
+    { --Benedict Point
+        coords = {x = -5230.27, y = -3468.65, z = -20.58},
+        radius = 2,
+        invLimit = 100
     }
+}
+
+Config.SupplyDeliveryLocations = {
+    {
+        coords = {x = 483.34, y = 659.47, z = 117.39}, --coords you will have to go to
+        pay = 20, --pay it will give
+        radius = 10 --How close you have to be to the coords for it to succeed
+    },
+    {
+        coords = {x = 1527.08, y = 444.97, z = 90.68},
+        pay = 30,
+        radius = 10
+    } --add or remove as many as you want
 }

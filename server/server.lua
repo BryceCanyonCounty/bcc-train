@@ -16,7 +16,7 @@ RegisterServerEvent('bcc-train:JobCheck', function()
   end
 end)
 
-TrainSpawned = false
+TrainSpawned, TrainEntity = false, nil
 VORPcore.addRpcCallback("bcc-train:AllowTrainSpawn", function(source, cb)
   if TrainSpawned then
     cb(false)
@@ -25,12 +25,14 @@ VORPcore.addRpcCallback("bcc-train:AllowTrainSpawn", function(source, cb)
   end
 end)
 
-RegisterServerEvent('bcc-train:UpdateTrainSpawnVar', function(updateBool)
+RegisterServerEvent('bcc-train:UpdateTrainSpawnVar', function(updateBool, createdTrain)
   if updateBool then
     TrainSpawned = true
+    TrainEntity = createdTrain
     BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"), _U("trainSpawnedwebMain"))
   else
     TrainSpawned = false
+    TrainEntity = nil
     BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"), _U("trainNotSpawnedWeb"))
   end
 end)
@@ -157,4 +159,34 @@ RegisterServerEvent('bcc-train:RepairTrain', function(trainId, configTable)
   else
     VORPcore.NotifyRightTip(_source, _U("noItem"), 4000)
   end
+end)
+
+------ Baccus bridge fall area ---------
+BridgeDestroyed = false
+RegisterServerEvent('bcc-train:ServerBridgeFallHandler', function(freshJoin)
+  local _source = source
+  if not freshJoin then
+    local itemCount = VORPInv.getItemCount(_source, Config.BacchusBridgeDestroying.dynamiteItem)
+    if itemCount >= Config.BacchusBridgeDestroying.dynamiteItemAmount then
+      if not BridgeDestroyed then
+        VORPInv.subItem(_source, Config.BacchusBridgeDestroying.dynamiteItem, Config.BacchusBridgeDestroying.dynamiteItemAmount)
+        BridgeDestroyed = true
+        VORPcore.NotifyRightTip(_source, _U("runFromExplosion"), 4000)
+        Wait(Config.BacchusBridgeDestroying.explosionTimer)
+        TriggerClientEvent('bcc-train:BridgeFall', -1) --triggers for all cleints
+      end
+    else
+      VORPcore.NotifyRightTip(_source, _U("noItem"), 4000)
+    end
+  else
+    if BridgeDestroyed then
+      TriggerClientEvent('bcc-train:BridgeFall', _source) --triggers for loaded in client
+    end
+  end
+end)
+
+RegisterServerEvent('bcc-train:DeliveryPay', function(pay)
+  local _source = source
+  local Character = VORPcore.getUser(_source).getUsedCharacter
+  Character.addCurrency(0, pay)
 end)

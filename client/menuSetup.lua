@@ -1,5 +1,5 @@
 ----- Close Menu When Backspaced Out -----
-local inMenu = false
+local inMenu, InMission = false, false
 EngineStarted = false
 
 AddEventHandler('bcc-train:MenuClose', function()
@@ -19,7 +19,8 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
 
     local elements = {
         { label = _U("ownedTrains"), value = 'ownedtrains', desc = _U("ownedTrains_desc") },
-        { label = _U("buyTrains"), value = 'buytrains', desc = _U("buyTrains_desc") }
+        { label = _U("buyTrains"), value = 'buytrains', desc = _U("buyTrains_desc") },
+        { label = _U("deliveryMission"), value = 'deliveryMission', desc = _U("deliveryMission_desc") }
     }
 
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
@@ -42,6 +43,18 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
                 ['buytrains'] = function()
                     MenuData.CloseAll()
                     TriggerServerEvent('bcc-train:GetOwnedTrains', 'buyTrain')
+                end,
+                ['deliveryMission'] = function()
+                    if CreatedTrain ~= nil then
+                        if not InMission then
+                            InMission = true
+                            deliveryMission()
+                        else
+                            VORPcore.NotifyRightTip(_U("inMission"), 4000)
+                        end
+                    else
+                        VORPcore.NotifyRightTip(_U("noTrain"), 4000)
+                    end
                 end
             }
 
@@ -136,7 +149,6 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
             if data.current.value then
                 VORPcore.RpcCall("bcc-train:AllowTrainSpawn", function(result)
                     if result then
-                        VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
                         TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', true)
                         MenuData.CloseAll() --have to be called above funct
                         local configTable = nil
@@ -145,7 +157,7 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
                                 configTable = v break
                             end
                         end
-                        spawnTrain(configTable, data.current.info)
+                        switchDirectionMenu(configTable, data.current.info)
                     else
                        VORPcore.NotifyRightTip(_U("trainSpawnedAlrady"), 4000)
                     end
@@ -153,6 +165,41 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
             end
         end)
 end)
+
+function switchDirectionMenu(configTable, menuTable)
+    MenuData.CloseAll()
+    inMenu = false
+
+    local elements = {
+        { label = _U("changeSpawnDir"), value = 'changeSpawnDir', desc = _U("changeSpawnDir_desc") },
+        { label = _U("noChangeSpawnDir"), value = 'noChangeSpawnDir', desc = _U("noChangeSpawnDir_desc") }
+    }
+
+    MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
+        {
+            title      = "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+            .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
+            .. "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+            subtext    = _U("trainMenu_desc"),
+            align      = 'top-left',
+            elements   = elements,
+            itemHeight = "4vh"
+        },
+        function(data)
+            if data.current == 'backup' then
+                _G[data.trigger]()
+            end
+            if data.current.value == 'changeSpawnDir' then
+                MenuData.CloseAll()
+                VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
+                spawnTrain(configTable, menuTable, true)
+            else
+                MenuData.CloseAll()
+                VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
+                spawnTrain(configTable, menuTable, false)
+            end
+        end)
+end
 
 local on = false --used for track switching
 function drivingTrainMenu(trainConfigTable, trainDbTable)
@@ -167,7 +214,7 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
         { label = _U("checkCond"), value = 'checkCond', desc = _U("checkCond_desc") },
         { label = _U("repairdTrain"), value = 'repairTrain', desc = _U("repairdTrain_desc") },
         { label = _U("startEnging"), value = 'startEngine', desc = _U("startEnging_desc") },
-        { label = _U("stopEngine"), value = 'stopEngine', desc = _U("stopEngine_desc") }
+        { label = _U("stopEngine"), value = 'stopEngine', desc = _U("stopEngine_desc") },
     }
     if Config.CruiseControl then
         table.insert(elements, { label = _U("forward"), value = 'forward', desc = _U("forward_desc") })
@@ -176,6 +223,8 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
     if trainConfigTable.allowInventory then
         table.insert(elements, { label = _U("openInv"), value = 'openInv', desc = _U("openInv_desc") })
     end
+
+    table.insert(elements, { label = _U("deleteTrain"), value = 'deleteTrain', desc = _U("deleteTrain_desc") }) --done here to ensure this is at the bottom of menu
 
     local forwardActive, backwardActive, speed = false, false, 0
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
@@ -291,6 +340,12 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 end,
                 ['repairTrain'] = function()
                     TriggerServerEvent('bcc-train:RepairTrain', TrainId, TrainConfigtable)
+                end,
+                ['deleteTrain'] = function()
+                    TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, CreatedTrain)
+                    RemoveBlip(TrainBlip)
+                    MenuData.CloseAll()
+                    DeleteEntity(CreatedTrain)
                 end
             }
 

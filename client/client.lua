@@ -72,16 +72,28 @@ function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for s
                 if GetPedInVehicleSeat(CreatedTrain, -1) == PlayerPedId() then
                     if not drivingMenuOpened then
                         drivingMenuOpened = true
+                        SendNUIMessage({
+                            type = 'toggle',
+                            visible = true
+                        })
                         drivingTrainMenu(trainTable, dbTable)
                     end
                 else
                     drivingMenuOpened = false
                     MenuData.CloseAll()
+                    SendNuiMessage({
+                        type = 'toggle',
+                        visible = false
+                    })
                 end
             else
                 if drivingMenuOpened then
                     drivingMenuOpened = false
                     MenuData.CloseAll()
+                    SendNuiMessage({
+                        type = 'toggle',
+                        visible = false
+                    })
                 end
             end
         end
@@ -125,10 +137,20 @@ end)
 
 RegisterNetEvent('bcc-train:CleintFuelUpdate', function(fuel)
     TrainFuel = fuel
+    SendNuiMessage({
+        type = 'update',
+        fuel = TrainFuel,
+        condition = nil
+    })
 end)
 
 RegisterNetEvent('bcc-train:CleintCondUpdate', function(cond)
     TrainCondition = cond
+    SendNuiMessage({
+        type = 'update',
+        condition = TrainCondition,
+        fuel = nil
+    })
 end)
 
 ------- Cleanup -----

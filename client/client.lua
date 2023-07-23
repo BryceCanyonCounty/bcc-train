@@ -2,7 +2,8 @@ CreatedTrain, TrainFuel, TrainId, TrainConfigtable, TrainCondition, TrainBlip = 
 CreateThread(function()
     SetRandomTrains(false)
     local PromptGroup = VORPutils.Prompts:SetupPromptGroup()
-    local firstprompt = PromptGroup:RegisterPrompt(_U("openStationMenu"), 0x760A9C6F, 1, 1, true, 'hold', { timedeventhash = "MEDIUM_TIMED_EVENT" })
+    local firstprompt = PromptGroup:RegisterPrompt(_U("openStationMenu"), 0x760A9C6F, 1, 1, true, 'hold',
+        { timedeventhash = "MEDIUM_TIMED_EVENT" })
     TriggerServerEvent('bcc-train:ServerBridgeFallHandler', true)
     while true do
         Wait(5)
@@ -24,29 +25,28 @@ CreateThread(function()
 end)
 
 function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for some of the logic here
-
     local trainHash = joaat(trainTable.model)
     local trainWagons = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash)
     TrainFuel = dbTable.fuel
     TrainId = dbTable.trainid
     TrainCondition = dbTable.condition
     TrainConfigtable = trainTable
-	for wagonIndex = 0, trainWagons - 1 do
-		local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
-		while not HasModelLoaded(trainWagonModel) do
-			Citizen.InvokeNative(0xFA28FE3A6246FC30, trainWagonModel, 1)
-			Wait(100)
-		end
-	end
+    for wagonIndex = 0, trainWagons - 1 do
+        local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
+        while not HasModelLoaded(trainWagonModel) do
+            Citizen.InvokeNative(0xFA28FE3A6246FC30, trainWagonModel, 1)
+            Wait(100)
+        end
+    end
 
     local px, py, pz = table.unpack(GetEntityCoords(PlayerPedId()))
-	CreatedTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, px, py, pz, dirChange, false, true, false)
+    CreatedTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, px, py, pz, dirChange, false, true, false)
     SetTrainSpeed(CreatedTrain, 0.0)
     SetTrainCruiseSpeed(CreatedTrain, 0.0) --these 2 natives freeze train on spawn
 
-	local bliphash = -399496385
-	TrainBlip = Citizen.InvokeNative(0x23f74c2fda6e7c61, bliphash, CreatedTrain) -- blip for train
-	SetBlipScale(TrainBlip, 1.5)
+    local bliphash = -399496385
+    TrainBlip = Citizen.InvokeNative(0x23f74c2fda6e7c61, bliphash, CreatedTrain) -- blip for train
+    SetBlipScale(TrainBlip, 1.5)
     TriggerEvent('bcc-train:FuelDecreaseHandler')
     TriggerEvent('bcc-train:CondDecreaseHandler')
 
@@ -64,7 +64,8 @@ function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for s
                 TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, CreatedTrain)
                 RemoveBlip(TrainBlip)
                 MenuData.CloseAll()
-                DeleteEntity(CreatedTrain) break
+                DeleteEntity(CreatedTrain)
+                break
             end
         elseif dist < 10 then
             sleep = false
@@ -72,28 +73,20 @@ function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for s
                 if GetPedInVehicleSeat(CreatedTrain, -1) == PlayerPedId() then
                     if not drivingMenuOpened then
                         drivingMenuOpened = true
-                        SendNUIMessage({
-                            type = 'toggle',
-                            visible = true
-                        })
                         drivingTrainMenu(trainTable, dbTable)
+                        print(trainTable.maxCondition)
+                        showHUD(TrainCondition, trainTable.maxCondition, TrainFuel, trainTable.maxFuel)
                     end
                 else
                     drivingMenuOpened = false
                     MenuData.CloseAll()
-                    SendNuiMessage({
-                        type = 'toggle',
-                        visible = false
-                    })
+                    hideHUD()
                 end
             else
                 if drivingMenuOpened then
                     drivingMenuOpened = false
                     MenuData.CloseAll()
-                    SendNuiMessage({
-                        type = 'toggle',
-                        visible = false
-                    })
+                    hideHUD()
                 end
             end
         end
@@ -137,20 +130,12 @@ end)
 
 RegisterNetEvent('bcc-train:CleintFuelUpdate', function(fuel)
     TrainFuel = fuel
-    SendNuiMessage({
-        type = 'update',
-        fuel = TrainFuel,
-        condition = nil
-    })
+    updateHUD(nil, fuel)
 end)
 
 RegisterNetEvent('bcc-train:CleintCondUpdate', function(cond)
     TrainCondition = cond
-    SendNuiMessage({
-        type = 'update',
-        condition = TrainCondition,
-        fuel = nil
-    })
+    updateHUD(cond, nil)
 end)
 
 ------- Cleanup -----
@@ -158,6 +143,7 @@ AddEventHandler("onResourceStop", function(resource)
     if resource == GetCurrentResourceName() then
         if DoesEntityExist(CreatedTrain) then
             DeleteEntity(CreatedTrain)
+            hideHUD()
         end
     end
 end)
@@ -181,15 +167,16 @@ RegisterNetEvent("bcc-train:BridgeFall", function()
     Wait(1000)
     local trainHash = joaat('appleseed_config')
     local trainWagons = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash)
-	for wagonIndex = 0, trainWagons - 1 do
-		local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
-		while not HasModelLoaded(trainWagonModel) do
-			Citizen.InvokeNative(0xFA28FE3A6246FC30, trainWagonModel, 1)
-			Wait(100)
-		end
+    for wagonIndex = 0, trainWagons - 1 do
+        local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
+        while not HasModelLoaded(trainWagonModel) do
+            Citizen.InvokeNative(0xFA28FE3A6246FC30, trainWagonModel, 1)
+            Wait(100)
+        end
         --SetEntityCollision(trainWagonModel, false, false)
-	end
-	local ghostTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, 489.65, 1770.44, 187.67, false, false, true, false)
+    end
+    local ghostTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, 489.65, 1770.44, 187.67, false, false, true,
+        false)
     SetTrainSpeed(ghostTrain, 0.0)
     SetTrainCruiseSpeed(ghostTrain, 0.0) --these 2 natives freeze train on spawn
     SetEntityVisible(ghostTrain, false)
@@ -199,7 +186,8 @@ end)
 CreateThread(function()
     if Config.BacchusBridgeDestroying.enabled then
         local PromptGroup = VORPutils.Prompts:SetupPromptGroup()
-        local firstprompt = PromptGroup:RegisterPrompt(_U("blowUpBridge"), 0x760A9C6F, 1, 1, true, 'hold', { timedeventhash = "MEDIUM_TIMED_EVENT" })
+        local firstprompt = PromptGroup:RegisterPrompt(_U("blowUpBridge"), 0x760A9C6F, 1, 1, true, 'hold',
+            { timedeventhash = "MEDIUM_TIMED_EVENT" })
         while true do
             local sleep = true
             local px, py, pz = table.unpack(GetEntityCoords(PlayerPedId()))
@@ -221,7 +209,8 @@ end)
 
 function deliveryMission()
     local dCoords = Config.SupplyDeliveryLocations[math.random(1, #Config.SupplyDeliveryLocations)]
-    local blip = Citizen.InvokeNative(0x45F13B7E0A15C880, -1282792512, dCoords.coords.x, dCoords.coords.y, dCoords.coords.z, 10.0)
+    local blip = Citizen.InvokeNative(0x45F13B7E0A15C880, -1282792512, dCoords.coords.x, dCoords.coords.y,
+        dCoords.coords.z, 10.0)
     Citizen.InvokeNative(0x9CB1A1623062F402, blip, _U("deliverySpot"))
 
     VORPcore.NotifyRightTip(_U("goToDeliverSpot"), 4000)
@@ -242,7 +231,8 @@ function deliveryMission()
                     InMission = false
                     RemoveBlip(blip)
                     VORPcore.NotifyRightTip(_U("deliveryDone") .. dCoords.pay, 4000)
-                    TriggerServerEvent('bcc-train:DeliveryPay', dCoords.pay) break
+                    TriggerServerEvent('bcc-train:DeliveryPay', dCoords.pay)
+                    break
                 end
             end
             if beenIn and dist > dCoords.radius then

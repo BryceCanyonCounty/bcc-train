@@ -10,14 +10,18 @@
 - Config option to allow cruise control
 - Configurable train speeds
 - Trains need fuel to run
-<<<<<<< HEAD
-- Train has to be maintained to continue running
-- Exports for developers to work with this script
-- Bacchus Bridge destroyable which allows for train ambushing etc!
-- Deliver supplies via train!
-=======
 - Maintain the train to keep it functional
->>>>>>> 36b34104097fb85ec52f88c84a929e52d66ad55b
+- Station blips
+- Webhooks
+- Bacchus Bridge explodable
+- Exports for developers to use
+
+# How to install
+- Download the zip from the latest release
+
+# How to use
+- To refuel/repair train hold right click while near the driver seat follow prompt
+- Buy a train from a station spawn it and have fun!
 
 ## Api
 ### Check if train spawned! (Server Side Use only)
@@ -43,3 +47,5 @@ local retval = exports['bcc-train']:BacchusBridgeDestroyed()
 
 # Side Notes
 - All imagery was provided by Lady Grey our in house designer
+- Thanks sav for the nui
+- Images for items can be found under the imgs/itemImages folder

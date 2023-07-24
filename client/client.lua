@@ -49,6 +49,7 @@ function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for s
     SetBlipScale(TrainBlip, 1.5)
     TriggerEvent('bcc-train:FuelDecreaseHandler')
     TriggerEvent('bcc-train:CondDecreaseHandler')
+    TriggerEvent('bcc-train:TrainTargetted') --Triggers the targetting to fuel and repair etc (DAM CONFOOOSIN THIS SHIT IS)
 
     local drivingMenuOpened = false
     while DoesEntityExist(CreatedTrain) do --done to check if it has been deleted via the command
@@ -137,16 +138,6 @@ RegisterNetEvent('bcc-train:CleintCondUpdate', function(cond)
     updateHUD(cond, nil)
 end)
 
-------- Cleanup -----
-AddEventHandler("onResourceStop", function(resource)
-    if resource == GetCurrentResourceName() then
-        if DoesEntityExist(CreatedTrain) then
-            DeleteEntity(CreatedTrain)
-            hideHUD()
-        end
-    end
-end)
-
 --------- Bacchus bridge collapse handling --------
 RegisterNetEvent("bcc-train:BridgeFall", function()
     local ran = 0
@@ -164,7 +155,7 @@ RegisterNetEvent("bcc-train:BridgeFall", function()
 
     --Spawning ghost train model as the game engine wont allow trains to hit each other this will slow the trains down automatically if near the exploded part of the bridge
     Wait(1000)
-    local trainHash = joaat('appleseed_config')
+    local trainHash = joaat('ghost_train_config')
     local trainWagons = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash)
     for wagonIndex = 0, trainWagons - 1 do
         local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
@@ -172,10 +163,8 @@ RegisterNetEvent("bcc-train:BridgeFall", function()
             Citizen.InvokeNative(0xFA28FE3A6246FC30, trainWagonModel, 1)
             Wait(100)
         end
-        --SetEntityCollision(trainWagonModel, false, false)
     end
-    local ghostTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, 489.65, 1770.44, 187.67, false, false, true,
-        false)
+    local ghostTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, 489.65, 1770.44, 187.67, false, false, true, false)
     SetTrainSpeed(ghostTrain, 0.0)
     SetTrainCruiseSpeed(ghostTrain, 0.0) --these 2 natives freeze train on spawn
     SetEntityVisible(ghostTrain, false)
@@ -251,34 +240,32 @@ function deliveryMission()
     end
 end
 
---[[ TODO
-- Skill checks
-]]
+local blips = {}
+CreateThread(function()
+    for k, v in pairs(Config.Stations) do
+        local blip = Citizen.InvokeNative(0x554D9D53F696D002, 1664425300, v.coords.x, v.coords.y, v.coords.z) -- This create a blip with a defualt blip hash we given
+        SetBlipSprite(blip, Config.StationBlipHash, 1) -- This sets the blip hash to the given in config.
+        SetBlipScale(blip, 0.8)
+        Citizen.InvokeNative(0x662D364ABF16DE2F, blip, joaat(Config.StationBlipColor))
+        Citizen.InvokeNative(0x9CB1A1623062F402, blip, v.stationName) -- Sets the blip Name
+        table.insert(blips, blip)
+    end
+end)
 
---[[DONE
-- Conductor job (done/checking for)
-- Switching Tracks (Done)
-- Modifiable Speed ofcourse (Done)
-- Delete train if the spawned player leaves or is too far away (Done)
-- Cruise control (Done)
-- Inventory for each individual train(done)
-- Export to check if a train is out for other scripts(done)
-- Refueling the train (Make take coal item so inv is useful) (Done)
-- Webhooking(Done)
-- Mainting the train (make take oil/items to make inv useful) (Done)
-- Multiple locations rhodes, valentine, saint denis (make inventories accessible by all conductors) (Done)
-- Export to return the train entity to be used in code (Done)
-- Change direction on track on train spawn (Done)
-- Investigate this working on the western/armadillo rails (Done/Works)
-- Option in train driving menu to delete train (Done)
-- Make the big bridge explodeable using rayfire thnx to jannings sync it and make trains stop before it reaches the bridge if blown(also make export for other scripts to see if its blown or not investigate spawning a ghost train on the tracks there to make trains stop (trains wont hit other trains and the game engine stops them automatically to prevent it)) (Done)
-- Export to see get distance between train and a coord (Not Needed existing export returns entity just do getent coords)
-- Supply mission (spawn train that has cargo and have it delivered to town only works if no trains are out ofcourse(Export to see if in progress)) (Done)
-]]
-
---[[ DOLATER
-- Clean the train station (make take cleaning item so inv is useful) (Do Later)
-]]
+------- Cleanup -----
+AddEventHandler("onResourceStop", function(resource)
+    if resource == GetCurrentResourceName() then
+        if DoesEntityExist(CreatedTrain) then
+            DeleteEntity(CreatedTrain)
+            hideHUD()
+        end
+        if #blips > 0 then
+            for key, value in pairs(blips) do
+                RemoveBlip(value)
+            end
+        end
+    end
+end)
 
 --[[
     Sacred Comment Penis

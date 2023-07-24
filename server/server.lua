@@ -109,24 +109,6 @@ RegisterServerEvent('bcc-train:OpenTrainInv', function(trainId)
   end
 end)
 
-RegisterServerEvent('bcc-train:CheckTrainFuel', function(trainid, configTable)
-  local _source = source
-  local param = { ['trainId'] = trainid }
-  local result = MySQL.query.await("SELECT * FROM train WHERE trainid=@trainId", param)
-  if #result > 0 then
-    VORPcore.NotifyRightTip(_source, result[1].fuel .. ' / ' .. configTable.maxFuel)
-  end
-end)
-
-RegisterServerEvent('bcc-train:CheckTrainCond', function(trainid, configTable)
-  local _source = source
-  local param = { ['trainId'] = trainid }
-  local result = MySQL.query.await("SELECT * FROM train WHERE trainid=@trainId", param)
-  if #result > 0 then
-    VORPcore.NotifyRightTip(_source, result[1].condition .. ' / ' .. configTable.maxCondition)
-  end
-end)
-
 RegisterServerEvent('bcc-train:DecTrainFuel', function(trainid, trainFuel)
   local _source = source
   local param = { ['trainId'] = trainid, ['fuel'] = trainFuel - Config.FuelSettings.FuelDecreaseAmount }
@@ -215,5 +197,5 @@ end
 if not file_exists('./ui/index.html') then
   print("^1 INCORRECT DOWNLOAD!  ^0")
   print(
-    '^4 Please Download: ^2(bcc-stables.zip) ^4from ^3<https://github.com/BryceCanyonCounty/bcc-stables/releases/latest>^0')
+    '^4 Please Download: ^2(bcc-train.zip) ^4from ^3<https://github.com/BryceCanyonCounty/bcc-train/releases/latest>^0')
 end

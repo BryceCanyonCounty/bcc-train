@@ -211,7 +211,7 @@ function switchDirectionMenu(configTable, menuTable)
         end)
 end
 
-local on = false --used for track switching
+local on, speed = false, 0 --used for track switching
 function drivingTrainMenu(trainConfigTable, trainDbTable)
     MenuData.CloseAll()
     inMenu = false --so this menu doesnt close
@@ -219,7 +219,7 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
     local elements = {
         {
             label = _U("speed"),
-            value = 0,
+            value = speed,
             desc = _U("speed_desc"),
             type = 'slider',
             min = 0,
@@ -228,16 +228,15 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
             hop = 1.0
         },
         { label = _U("switchTrack"),  value = 'switchtrack', desc = _U("switchTrack_desc") },
-        { label = _U("checkFuel"),    value = 'checkFuel',   desc = _U("checkFuel_desc") },
-        { label = _U("addFuel"),      value = 'addFuel',     desc = _U("addFuel_desc") },
-        { label = _U("checkCond"),    value = 'checkCond',   desc = _U("checkCond_desc") },
-        { label = _U("repairdTrain"), value = 'repairTrain', desc = _U("repairdTrain_desc") },
-        { label = _U("startEnging"),  value = 'startEngine', desc = _U("startEnging_desc") },
-        { label = _U("stopEngine"),   value = 'stopEngine',  desc = _U("stopEngine_desc") },
     }
     if Config.CruiseControl then
         table.insert(elements, { label = _U("forward"), value = 'forward', desc = _U("forward_desc") })
         table.insert(elements, { label = _U("backward"), value = 'backward', desc = _U("backward_desc") })
+    end
+    if EngineStarted then
+        table.insert(elements, { label = _U("stopEngine"),   value = 'stopEngine',  desc = _U("stopEngine_desc") })
+    else
+        table.insert(elements, { label = _U("startEnging"),  value = 'startEngine', desc = _U("startEnging_desc") })
     end
     if trainConfigTable.allowInventory then
         table.insert(elements, { label = _U("openInv"), value = 'openInv', desc = _U("openInv_desc") })
@@ -245,7 +244,7 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
 
     table.insert(elements, { label = _U("deleteTrain"), value = 'deleteTrain', desc = _U("deleteTrain_desc") }) --done here to ensure this is at the bottom of menu
 
-    local forwardActive, backwardActive, speed = false, false, 0
+    local forwardActive, backwardActive = false, false
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
             title =
@@ -340,27 +339,19 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 ['openInv'] = function()
                     TriggerServerEvent('bcc-train:OpenTrainInv', trainDbTable.trainid)
                 end,
-                ['checkFuel'] = function()
-                    TriggerServerEvent('bcc-train:CheckTrainFuel', TrainId, TrainConfigtable)
-                end,
-                ['addFuel'] = function()
-                    TriggerServerEvent('bcc-train:FuelTrain', TrainId, TrainConfigtable)
-                end,
                 ['stopEngine'] = function()
                     VORPcore.NotifyRightTip(_U("engineStopped"), 4000)
                     EngineStarted = false
+                    MenuData.CloseAll()
+                    drivingTrainMenu(trainConfigTable, trainDbTable)
                     Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
                 end,
                 ['startEngine'] = function()
                     VORPcore.NotifyRightTip(_U("engineStarted"), 4000)
                     EngineStarted = true
+                    MenuData.CloseAll()
+                    drivingTrainMenu(trainConfigTable, trainDbTable)
                     maxSpeedCalc(speed)
-                end,
-                ['checkCond'] = function()
-                    TriggerServerEvent('bcc-train:CheckTrainCond', TrainId, TrainConfigtable)
-                end,
-                ['repairTrain'] = function()
-                    TriggerServerEvent('bcc-train:RepairTrain', TrainId, TrainConfigtable)
                 end,
                 ['deleteTrain'] = function()
                     TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, CreatedTrain)

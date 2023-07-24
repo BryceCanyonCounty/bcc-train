@@ -10,3 +10,4 @@ CREATE TABLE IF NOT EXISTS `train` (
 
 INSERT INTO `items`(`item`, `label`, `limit`, `can_remove`, `type`, `usable`) VALUES ('bagofcoal', 'Bag Of Coal', 10, 1, 'item_standard', 0);
 INSERT INTO `items`(`item`, `label`, `limit`, `can_remove`, `type`, `usable`) VALUES ('trainoil', 'Train Oil', 10, 1, 'item_standard', 0);
+INSERT INTO `items`(`item`, `label`, `limit`, `can_remove`, `type`, `usable`) VALUES ('dynamitebundle', 'Dynamite Bundle', 10, 1, 'item_standard', 0);

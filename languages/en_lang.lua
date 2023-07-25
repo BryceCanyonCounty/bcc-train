@@ -75,5 +75,7 @@ Locales["en_lang"] = {
     missionFailed = 'Mission Failed!',
     inMission = 'Already in mission!',
     goDeliver = 'Stop train, and Dismount train, and go to the drop off!',
-    trainToFar = 'Train to far from drop off!'
+    trainToFar = 'Train to far from drop off!',
+    cruiseDisabledInRegion = 'Cruise control can not be used in this region! Cruise Disabled!',
+    noCruiseNoFuel = 'Failed no fuel!'
 }

@@ -1,4 +1,5 @@
 CreatedTrain, TrainFuel, TrainId, TrainConfigtable, TrainCondition, TrainBlip = nil, nil, nil, nil, nil, nil
+local currentStation = nil --used to store config table to detect where to spawn the train
 CreateThread(function()
     SetRandomTrains(false)
     local PromptGroup = VORPutils.Prompts:SetupPromptGroup()
@@ -14,6 +15,7 @@ CreateThread(function()
                 sleep = false
                 PromptGroup:ShowGroup(_U("trainStation"))
                 if firstprompt:HasCompleted() then
+                    currentStation = v
                     TriggerServerEvent('bcc-train:JobCheck')
                 end
             end
@@ -26,21 +28,13 @@ end)
 
 function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for some of the logic here
     local trainHash = joaat(trainTable.model)
-    local trainWagons = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash)
     TrainFuel = dbTable.fuel
     TrainId = dbTable.trainid
     TrainCondition = dbTable.condition
     TrainConfigtable = trainTable
-    for wagonIndex = 0, trainWagons - 1 do
-        local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
-        while not HasModelLoaded(trainWagonModel) do
-            Citizen.InvokeNative(0xFA28FE3A6246FC30, trainWagonModel, 1)
-            Wait(100)
-        end
-    end
 
-    local px, py, pz = table.unpack(GetEntityCoords(PlayerPedId()))
-    CreatedTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, px, py, pz, dirChange, false, true, false)
+    loadTrainCars(trainHash)
+    CreatedTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, currentStation.trainSpawnCoords.x, currentStation.trainSpawnCoords.y, currentStation.trainSpawnCoords.z, dirChange, false, true, false)
     SetTrainSpeed(CreatedTrain, 0.0)
     SetTrainCruiseSpeed(CreatedTrain, 0.0) --these 2 natives freeze train on spawn
 
@@ -155,16 +149,10 @@ RegisterNetEvent("bcc-train:BridgeFall", function()
 
     --Spawning ghost train model as the game engine wont allow trains to hit each other this will slow the trains down automatically if near the exploded part of the bridge
     Wait(1000)
-    local trainHash = joaat('ghost_train_config')
-    local trainWagons = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash)
-    for wagonIndex = 0, trainWagons - 1 do
-        local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
-        while not HasModelLoaded(trainWagonModel) do
-            Citizen.InvokeNative(0xFA28FE3A6246FC30, trainWagonModel, 1)
-            Wait(100)
-        end
-    end
-    local ghostTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, 489.65, 1770.44, 187.67, false, false, true, false)
+    local trainHash = joaat('engine_config')
+    loadTrainCars(trainHash)
+    local ghostTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, 499.69, 1768.78, 188.77, false, false, true, false)
+
     SetTrainSpeed(ghostTrain, 0.0)
     SetTrainCruiseSpeed(ghostTrain, 0.0) --these 2 natives freeze train on spawn
     SetEntityVisible(ghostTrain, false)

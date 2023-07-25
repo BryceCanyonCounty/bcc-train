@@ -4,7 +4,6 @@ CREATE TABLE IF NOT EXISTS `train` (
     `trainModel` varchar(50) NOT NULL,
     `fuel` int(11) NOT NULL,
     `condition` int(11) NOT NULL,
-    FOREIGN KEY characters(charidentifier) REFERENCES characters ON DELETE CASCADE,
     PRIMARY KEY(trainid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

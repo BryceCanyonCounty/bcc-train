@@ -264,13 +264,22 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                     if EngineStarted then
                         if not backwardActive then
                             if not forwardActive then
-                                forwardActive = true
-                                VORPcore.NotifyRightTip(_U("forwardEnabled"), 4000)
-                                while forwardActive do
-                                    Wait(100)
-                                    if speed ~= 0 and speed ~= nil then --stops error
-                                        SetTrainSpeed(CreatedTrain, speed + .1)
+                                if TrainFuel ~= 0 then
+                                    forwardActive = true
+                                    VORPcore.NotifyRightTip(_U("forwardEnabled"), 4000)
+                                    while forwardActive do
+                                        Wait(100)
+                                        local cx, cy, cz = GetEntityCoords(CreatedTrain)
+                                        if GetDistanceBetweenCoords(517.56, 1757.27, 188.34, cx, cy, cz) < 1000 then
+                                            VORPcore.NotifyRightTip(_U("cruiseDisabledInRegion"), 4000)
+                                            forwardActive = false break
+                                        end
+                                        if speed ~= 0 and speed ~= nil then --stops error
+                                            SetTrainSpeed(CreatedTrain, speed + .1)
+                                        end
                                     end
+                                else
+                                    VORPcore.NotifyRightTip(_U("noCruiseNoFuel"), 4000)
                                 end
                             else
                                 VORPcore.NotifyRightTip(_U("forwardDisbaled"), 4000)
@@ -285,13 +294,22 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                     if EngineStarted then
                         if not forwardActive then
                             if not backwardActive then
-                                backwardActive = true
-                                VORPcore.NotifyRightTip(_U("backwardEnabled"), 4000)
-                                while backwardActive do
-                                    Wait(100)
-                                    if speed ~= 0 and speed ~= nil then --stops error
-                                        SetTrainSpeed(CreatedTrain, speed + .1 - speed * 2)
+                                if TrainFuel ~= 0 then
+                                    backwardActive = true
+                                    VORPcore.NotifyRightTip(_U("backwardEnabled"), 4000)
+                                    while backwardActive do
+                                        Wait(100)
+                                        local cx, cy, cz = GetEntityCoords(CreatedTrain)
+                                        if GetDistanceBetweenCoords(517.56, 1757.27, 188.34, cx, cy, cz) < 1000 then
+                                            VORPcore.NotifyRightTip(_U("cruiseDisabledInRegion"), 4000)
+                                            backwardActive = false break
+                                        end
+                                        if speed ~= 0 and speed ~= nil then --stops error
+                                            SetTrainSpeed(CreatedTrain, speed + .1 - speed * 2)
+                                        end
                                     end
+                                else
+                                    VORPcore.NotifyRightTip(_U("noCruiseNoFuel"), 4000)
                                 end
                             else
                                 VORPcore.NotifyRightTip(_U("backwardDisabled"), 4000)
@@ -303,35 +321,12 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                     end
                 end,
                 ['switchtrack'] = function()
-                    local trackModels = {
-                        { model = 'FREIGHT_GROUP' },
-                        { model = 'TRAINS3' },
-                        { model = 'BRAITHWAITES2_TRACK_CONFIG' },
-                        { model = 'TRAINS_OLD_WEST01' },
-                        { model = 'TRAINS_OLD_WEST03' },
-                        { model = 'TRAINS_NB1' },
-                        { model = 'TRAINS_INTERSECTION1_ANN' },
-                    }
                     if not on then
-                        local counter = 0
-                        repeat
-                            for k, v in pairs(trackModels) do
-                                local trackHash = joaat(v.model)
-                                Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, true)
-                            end
-                            counter = counter + 1
-                        until counter >= 100
+                        trackSwitch(true)
                         on = true
                         VORPcore.NotifyRightTip(_U("switchingOn"), 4000)
                     else
-                        local counter = 0
-                        repeat
-                            for k, v in pairs(trackModels) do
-                                local trackHash = joaat(v.model)
-                                Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, false)
-                            end
-                            counter = counter + 1
-                        until counter >= 100
+                        trackSwitch(false)
                         on = false
                         VORPcore.NotifyRightTip(_U("switchingOn"), 4000)
                     end

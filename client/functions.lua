@@ -101,3 +101,34 @@ AddEventHandler('bcc-wagons:TargetReturn', function(wagonGroup)
   PromptSetGroup(targetReturn2, wagonGroup)
   PromptRegisterEnd(targetReturn2)
 end)
+
+function loadTrainCars(trainHash)
+  local trainWagons = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash)
+  for wagonIndex = 0, trainWagons - 1 do
+    local trainWagonModel = Citizen.InvokeNative(0x8df5f6a19f99f0d5, trainHash, wagonIndex)
+    while not HasModelLoaded(trainWagonModel) do
+      Citizen.InvokeNative(0xFA28FE3A6246FC30, trainWagonModel, 1)
+      Wait(100)
+    end
+  end
+end
+
+function trackSwitch(toggle)
+  local trackModels = {
+    { model = 'FREIGHT_GROUP' },
+    { model = 'TRAINS3' },
+    { model = 'BRAITHWAITES2_TRACK_CONFIG' },
+    { model = 'TRAINS_OLD_WEST01' },
+    { model = 'TRAINS_OLD_WEST03' },
+    { model = 'TRAINS_NB1' },
+    { model = 'TRAINS_INTERSECTION1_ANN' },
+  }
+  local counter = 0
+  repeat
+    for k, v in pairs(trackModels) do
+      local trackHash = joaat(v.model)
+      Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, toggle)
+    end
+    counter = counter + 1
+  until counter >= 25
+end

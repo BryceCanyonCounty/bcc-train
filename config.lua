@@ -149,66 +149,77 @@ Config.StationBlipColor = '' -- Set the blip color here
 Config.Stations = {
     { --valentine
         coords = {x = -176.01, y = 627.86, z = 114.09},
+        trainSpawnCoords = {x = -163.78, y = 628.17, z = 113.52}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2, --keep this kind of low
         invLimit = 200,
         stationName = 'Valentine Station'
     },
     { --emerald station
         coords = {x = 1525.18, y = 442.51, z = 90.68},
+        trainSpawnCoords = {x = 1529.67, y = 442.54, z = 90.22}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 50,
         stationName = 'Emerald Station'
     },
     { --flatneck station
         coords = {x = -337.13, y = -360.63, z = 88.08},
+        trainSpawnCoords = {x = -339.0, y = -350.0, z = 87.81}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 200,
         stationName = 'Flatneck Station'
     },
     { --rhodes
         coords = {x = 1225.77, y = -1296.45, z = 76.9},
+        trainSpawnCoords = {x = 1226.74, y = -1310.03, z = 76.47}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 200,
         stationName = 'Rhodes Station'
     },
     { --Saint Denis
         coords = {x = 2747.5, y = -1398.89, z = 46.18},
+        trainSpawnCoords = {x = 2770.08, y = -1414.51, z = 45.98}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 300,
         stationName = 'Saint Denis Station'
     },
-    { --annesburge
+    { --annesburg
         coords = {x = 2938.98, y = 1282.05, z = 44.65},
+        trainSpawnCoords = {x = 2957.25, y = 1281.58, z = 43.95}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 100,
         stationName = 'Annesburg Station'
     },
     { --bacchus station
         coords = {x = 582.49, y = 1681.07, z = 187.79},
+        trainSpawnCoords = {x = 581.14, y = 1691.8, z = 187.6}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 50,
         stationName = 'Bacchus Station'
     },
     { --wallace station
         coords = {x = -1299.39, y = 402.09, z = 95.38},
+        trainSpawnCoords = {x = -1307.62, y = 406.83, z = 94.98}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 50,
         stationName = 'Wallace Station'
     },
     { --riggs station
         coords = {x = -1093.92, y = -576.97, z = 82.41},
+        trainSpawnCoords = {x = -1097.07, y = -583.71, z = 81.67}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 100,
         stationName = 'Riggs Station'
     },
     { --armadillo
         coords = {x = -3729.1, y = -2602.83, z = -12.94},
+        trainSpawnCoords = {x = -3748.85, y = -2600.8, z = -13.72}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 300,
         stationName = 'Armadillo Station'
     },
     { --Benedict Point
         coords = {x = -5230.27, y = -3468.65, z = -20.58},
+        trainSpawnCoords = {x = -5235.54, y = -3473.3, z = -21.25}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 100,
         stationName = 'Benedict Station'

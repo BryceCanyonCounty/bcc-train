@@ -266,6 +266,12 @@ AddEventHandler("onResourceStop", function(resource)
         end
     end
 end)
+AddEventHandler("playerDropped", function ()
+    if DoesEntityExist(CreatedTrain) then
+        DeleteEntity(CreatedTrain)
+        TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false)
+    end
+end)
 
 --[[
     Sacred Comment Penis

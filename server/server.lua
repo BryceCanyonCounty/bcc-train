@@ -29,15 +29,11 @@ RegisterServerEvent('bcc-train:UpdateTrainSpawnVar', function(updateBool, create
   if updateBool then
     TrainSpawned = true
     TrainEntity = createdTrain
-    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train',
-      'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"),
-      _U("trainSpawnedwebMain"))
+    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"), _U("trainSpawnedwebMain"))
   else
     TrainSpawned = false
     TrainEntity = nil
-    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train',
-      'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"),
-      _U("trainNotSpawnedWeb"))
+    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"), _U("trainNotSpawnedWeb"))
   end
 end)
 

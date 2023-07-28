@@ -1,23 +1,32 @@
-.DS_Store
-node_modules
-/dist
+html
+ui/node_modules
 
+# Logs
+ui/logs
+ui/*.log
+ui/npm-debug.log*
+ui/yarn-debug.log*
+ui/yarn-error.log*
+ui/pnpm-debug.log*
+ui/lerna-debug.log*
 
-# local env files
-.env.local
-.env.*.local
+ui/node_modules
+ui/.DS_Store
+ui/dist
+ui/dist-ssr
+ui/coverage
+ui/*.local
 
-# Log files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+/cypress/videos/
+/cypress/screenshots/
 
 # Editor directories and files
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+ui/.vscode/*
+ui/!.vscode/extensions.json
+ui/.idea
+ui/*.suo
+ui/*.ntvs*
+ui/*.njsproj
+ui/*.sln
+ui/*.sw?
+ui/.yarn

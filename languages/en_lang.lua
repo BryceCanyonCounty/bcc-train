@@ -77,5 +77,6 @@ Locales["en_lang"] = {
     goDeliver = 'Stop train, and Dismount train, and go to the drop off!',
     trainToFar = 'Train to far from drop off!',
     cruiseDisabledInRegion = 'Cruise control can not be used in this region! Cruise Disabled!',
-    noCruiseNoFuel = 'Failed no fuel!'
+    noCruiseNoFuel = 'Failed no fuel!',
+    bacchusDestroyedWebhook = 'Bacchus bridge has been destroyed!'
 }

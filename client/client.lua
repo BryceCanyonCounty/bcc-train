@@ -184,9 +184,14 @@ CreateThread(function()
 end)
 
 function deliveryMission()
-    local dCoords = Config.SupplyDeliveryLocations[math.random(1, #Config.SupplyDeliveryLocations)]
-    local blip = Citizen.InvokeNative(0x45F13B7E0A15C880, -1282792512, dCoords.coords.x, dCoords.coords.y,
-        dCoords.coords.z, 10.0)
+    local dCoords, storedCoords = nil, {}
+    for k, v in pairs(Config.SupplyDeliveryLocations) do
+        if v.outWest == currentStation.outWest then
+            table.insert(storedCoords, v)
+        end
+    end
+    dCoords = storedCoords[math.random(1, #storedCoords)]
+    local blip = Citizen.InvokeNative(0x45F13B7E0A15C880, -1282792512, dCoords.coords.x, dCoords.coords.y, dCoords.coords.z, 10.0)
     Citizen.InvokeNative(0x9CB1A1623062F402, blip, _U("deliverySpot"))
 
     VORPcore.NotifyRightTip(_U("goToDeliverSpot"), 4000)
@@ -254,6 +259,7 @@ AddEventHandler("onResourceStop", function(resource)
         end
     end
 end)
+
 AddEventHandler("playerDropped", function ()
     if DoesEntityExist(CreatedTrain) then
         DeleteEntity(CreatedTrain)

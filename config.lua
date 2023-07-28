@@ -2,7 +2,7 @@ Config = {}
 
 Config.defaultlang = 'en_lang'
 
-Config.WebhookLink = 'yourLink' --Insert your webhook link to enable webhooking
+Config.WebhookLink = '' --Insert your webhook link to enable webhooking
 
 Config.ConductorJob = 'conductor' --job title of who can spawn a train
 
@@ -152,77 +152,88 @@ Config.Stations = {
         trainSpawnCoords = {x = -163.78, y = 628.17, z = 113.52}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2, --keep this kind of low
         invLimit = 200,
-        stationName = 'Valentine Station'
+        stationName = 'Valentine Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --emerald station
         coords = {x = 1525.18, y = 442.51, z = 90.68},
         trainSpawnCoords = {x = 1529.67, y = 442.54, z = 90.22}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 50,
-        stationName = 'Emerald Station'
+        stationName = 'Emerald Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --flatneck station
         coords = {x = -337.13, y = -360.63, z = 88.08},
         trainSpawnCoords = {x = -339.0, y = -350.0, z = 87.81}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 200,
-        stationName = 'Flatneck Station'
+        stationName = 'Flatneck Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --rhodes
         coords = {x = 1225.77, y = -1296.45, z = 76.9},
         trainSpawnCoords = {x = 1226.74, y = -1310.03, z = 76.47}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 200,
-        stationName = 'Rhodes Station'
+        stationName = 'Rhodes Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --Saint Denis
         coords = {x = 2747.5, y = -1398.89, z = 46.18},
         trainSpawnCoords = {x = 2770.08, y = -1414.51, z = 45.98}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 300,
-        stationName = 'Saint Denis Station'
+        stationName = 'Saint Denis Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --annesburg
         coords = {x = 2938.98, y = 1282.05, z = 44.65},
         trainSpawnCoords = {x = 2957.25, y = 1281.58, z = 43.95}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 100,
-        stationName = 'Annesburg Station'
+        stationName = 'Annesburg Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --bacchus station
         coords = {x = 582.49, y = 1681.07, z = 187.79},
         trainSpawnCoords = {x = 581.14, y = 1691.8, z = 187.6}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 50,
-        stationName = 'Bacchus Station'
+        stationName = 'Bacchus Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --wallace station
         coords = {x = -1299.39, y = 402.09, z = 95.38},
         trainSpawnCoords = {x = -1307.62, y = 406.83, z = 94.98}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 50,
-        stationName = 'Wallace Station'
+        stationName = 'Wallace Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --riggs station
         coords = {x = -1093.92, y = -576.97, z = 82.41},
         trainSpawnCoords = {x = -1097.07, y = -583.71, z = 81.67}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 100,
-        stationName = 'Riggs Station'
+        stationName = 'Riggs Station',
+        outWest = false --set false if this is not in the desert/western part of the map
     },
     { --armadillo
         coords = {x = -3729.1, y = -2602.83, z = -12.94},
         trainSpawnCoords = {x = -3748.85, y = -2600.8, z = -13.72}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 300,
-        stationName = 'Armadillo Station'
+        stationName = 'Armadillo Station',
+        outWest = true --set false if this is not in the desert/western part of the map
     },
     { --Benedict Point
         coords = {x = -5230.27, y = -3468.65, z = -20.58},
         trainSpawnCoords = {x = -5235.54, y = -3473.3, z = -21.25}, --Make sure the coord here is directly on top of the track you want the train to spawn on!
         radius = 2,
         invLimit = 100,
-        stationName = 'Benedict Station'
+        stationName = 'Benedict Station',
+        outWest = true --set false if this is not in the desert/western part of the map
     }
 }
 
@@ -230,11 +241,13 @@ Config.SupplyDeliveryLocations = {
     {
         coords = {x = 483.34, y = 659.47, z = 117.39}, --coords you will have to go to
         pay = 20, --pay it will give
+        outWest = false, --set false if this is not in the desert/western part of the map
         radius = 10 --How close you have to be to the coords for it to succeed
     },
     {
-        coords = {x = 1527.08, y = 444.97, z = 90.68},
+        coords = {x = -3749.8, y = -2635.28, z = -13.87},
         pay = 30,
+        outWest = true,
         radius = 10
     } --add or remove as many as you want
 }

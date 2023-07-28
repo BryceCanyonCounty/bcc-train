@@ -58,12 +58,11 @@ AddEventHandler('bcc-train:TrainTargetted', function()
     if dist <= returnDist then
       Citizen.InvokeNative(0x05254BA0B44ADC16, CreatedTrain, true) -- SetVehicleCanBeTargetted
       if Citizen.InvokeNative(0x6F972C1AB75A1ED0, player) then -- IsPedOnAnyTrain
-        Citizen.InvokeNative(0x05254BA0B44ADC16, CreatedTrain, true) -- SetVehicleCanBeTargetted
         local _, targetEntity = GetPlayerTargetEntity(id)
         if Citizen.InvokeNative(0x27F89FDC16688A7A, id, CreatedTrain, 0) then -- IsPlayerTargettingEntity
           sleep = 0
-          local wagonGroup = Citizen.InvokeNative(0xB796970BD125FCE8, targetEntity) -- PromptGetGroupIdForTargetEntity
-          TriggerEvent('bcc-wagons:TargetReturn', wagonGroup)
+          local trainGroup = Citizen.InvokeNative(0xB796970BD125FCE8, targetEntity) -- PromptGetGroupIdForTargetEntity
+          TriggerEvent('bcc-train:TargetPrompts', trainGroup)
           if Citizen.InvokeNative(0x580417101DDB492F, 2, 0x5415BE48) then -- IsControlJustPressed
             TriggerServerEvent('bcc-train:FuelTrain', TrainId, TrainConfigtable)
           elseif Citizen.InvokeNative(0x580417101DDB492F, 2, 0x73A8FD83) then
@@ -80,26 +79,26 @@ AddEventHandler('bcc-train:TrainTargetted', function()
   end
 end)
 
-AddEventHandler('bcc-wagons:TargetReturn', function(wagonGroup)
+AddEventHandler('bcc-train:TargetPrompts', function(trainGroup)
   local str = CreateVarString(10, 'LITERAL_STRING', _U("addFuel"))
-  local targetReturn = PromptRegisterBegin()
-  PromptSetControlAction(targetReturn, 0x5415BE48)
-  PromptSetText(targetReturn, str)
-  PromptSetEnabled(targetReturn, 1)
-  PromptSetVisible(targetReturn, 1)
-  PromptSetHoldMode(targetReturn, 1)
-  PromptSetGroup(targetReturn, wagonGroup)
-  PromptRegisterEnd(targetReturn)
+  local fuelTarget = PromptRegisterBegin()
+  PromptSetControlAction(fuelTarget, 0x5415BE48)
+  PromptSetText(fuelTarget, str)
+  PromptSetEnabled(fuelTarget, 1)
+  PromptSetVisible(fuelTarget, 1)
+  PromptSetHoldMode(fuelTarget, 1)
+  PromptSetGroup(fuelTarget, trainGroup)
+  PromptRegisterEnd(fuelTarget)
 
   local str2 = CreateVarString(10, 'LITERAL_STRING', _U("repairdTrain"))
-  local targetReturn2 = PromptRegisterBegin()
-  PromptSetControlAction(targetReturn2, 0x73A8FD83)
-  PromptSetText(targetReturn2, str2)
-  PromptSetEnabled(targetReturn2, 1)
-  PromptSetVisible(targetReturn2, 1)
-  PromptSetHoldMode(targetReturn2, 1)
-  PromptSetGroup(targetReturn2, wagonGroup)
-  PromptRegisterEnd(targetReturn2)
+  local repairTarget = PromptRegisterBegin()
+  PromptSetControlAction(repairTarget, 0x73A8FD83)
+  PromptSetText(repairTarget, str2)
+  PromptSetEnabled(repairTarget, 1)
+  PromptSetVisible(repairTarget, 1)
+  PromptSetHoldMode(repairTarget, 1)
+  PromptSetGroup(repairTarget, trainGroup)
+  PromptRegisterEnd(repairTarget)
 end)
 
 function loadTrainCars(trainHash)

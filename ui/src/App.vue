@@ -63,8 +63,9 @@ const onMessage = (event) => {
         Fuel:
         <span
           :class="{
-            bad: fuelLevel < 25,
-            good: fuelLevel >= 25,
+            bad: fuelLevel <= 25,
+            meh: fuelLevel < 45 && fuelLevel > 25,
+            good: fuelLevel >= 45,
           }"
         >
           {{ fuelLevel }} %</span
@@ -74,8 +75,9 @@ const onMessage = (event) => {
         Condition:
         <span
           :class="{
-            bad: conditionLevel < 25,
-            good: conditionLevel >= 25,
+            bad: conditionLevel <= 25,
+            meh: conditionLevel < 45 && conditionLevel > 25,
+            good: conditionLevel >= 45,
           }"
         >
           {{ conditionLevel }} %</span
@@ -93,6 +95,11 @@ const onMessage = (event) => {
 
 .good {
   color: #0a6522;
+  font-weight: bold;
+}
+
+.meh {
+  color: orangered;
   font-weight: bold;
 }
 

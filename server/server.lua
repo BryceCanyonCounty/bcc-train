@@ -161,11 +161,11 @@ RegisterServerEvent('bcc-train:ServerBridgeFallHandler', function(freshJoin)
     local itemCount = VORPInv.getItemCount(_source, Config.BacchusBridgeDestroying.dynamiteItem)
     if itemCount >= Config.BacchusBridgeDestroying.dynamiteItemAmount then
       if not BridgeDestroyed then
-        VORPInv.subItem(_source, Config.BacchusBridgeDestroying.dynamiteItem,
-          Config.BacchusBridgeDestroying.dynamiteItemAmount)
+        VORPInv.subItem(_source, Config.BacchusBridgeDestroying.dynamiteItem, Config.BacchusBridgeDestroying.dynamiteItemAmount)
         BridgeDestroyed = true
         VORPcore.NotifyRightTip(_source, _U("runFromExplosion"), 4000)
         Wait(Config.BacchusBridgeDestroying.explosionTimer)
+        BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("bacchusDestroyedWebhook"), "")
         TriggerClientEvent('bcc-train:BridgeFall', -1) --triggers for all cleints
       end
     else

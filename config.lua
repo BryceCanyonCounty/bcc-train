@@ -34,7 +34,8 @@ Config.BacchusBridgeDestroying = {
 
 Config.Trains = {
     {
-        model = 'appleseed_config', --model name of the train
+        model = 'appleseed_config', --model name of the train - DO NOT CHANGE
+        label = 'appleseed', -- displayed name of the train
         cost = 30, --cost to buy the train
         maxFuel = 100, --the maximum fuel amount the train can have
         maxCondition = 100, --tha maximum condition the train can be at
@@ -44,6 +45,7 @@ Config.Trains = {
     }, --You can add more trains by copy pasting this table and changing what you need (if you add more models/trains I can not garuntee they work as they have not been tested)
     {
         model = 'bountyhunter_config',
+        label = 'bountyhunter',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,
@@ -53,6 +55,7 @@ Config.Trains = {
     },
     {
         model = 'engine_config',
+        label = 'engine',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,
@@ -62,6 +65,7 @@ Config.Trains = {
     },
     {
         model = 'ghost_train_config',
+        label = 'ghost_train',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,
@@ -71,6 +75,7 @@ Config.Trains = {
     },
     {
         model = 'gunslinger3_config',
+        label = 'gunslinger3',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,
@@ -80,6 +85,7 @@ Config.Trains = {
     },
     {
         model = 'gunslinger4_config',
+        label = 'gunslinger4',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,
@@ -89,24 +95,7 @@ Config.Trains = {
     },
     {
         model = 'handcart_config',
-        cost = 30,
-        maxFuel = 100,
-        maxCondition = 100,
-        maxSpeed = 10, --max speed the train can go 30 is highest game allows
-        allowInventory = true, --if false train inventories will be disabled
-        invLimit = 100, --inventory limit for this train
-    },
-    {
-        model = 'industry2_config',
-        cost = 30,
-        maxFuel = 100,
-        maxCondition = 100,
-        maxSpeed = 10, --max speed the train can go 30 is highest game allows
-        allowInventory = true, --if false train inventories will be disabled
-        invLimit = 100, --inventory limit for this train
-    },
-    {
-        model = 'minecart_config',
+        label = 'handcart',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,
@@ -116,6 +105,7 @@ Config.Trains = {
     },
     {
         model = 'prisoner_escort_config',
+        label = 'prisoner_escort',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,
@@ -125,6 +115,7 @@ Config.Trains = {
     },
     {
         model = 'trolley_config',
+        label = 'trolley',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,
@@ -134,6 +125,7 @@ Config.Trains = {
     },
     {
         model = 'winter4_config',
+        label = 'winter4',
         cost = 30,
         maxFuel = 100,
         maxCondition = 100,

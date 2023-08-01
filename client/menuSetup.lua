@@ -27,10 +27,10 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
             title =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 8vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
                 .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainStation") .. "</div>"
                 ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             align = 'top-left',
             elements = elements,
         },
@@ -101,10 +101,10 @@ RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
             title      =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
                 .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
                 ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
@@ -140,10 +140,10 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
             title      =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
                 .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
                 ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
@@ -186,10 +186,10 @@ function switchDirectionMenu(configTable, menuTable)
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
             title      =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 10vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
                 .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
                 ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -21vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
@@ -248,10 +248,10 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
     MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
         {
             title =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 7vh;' src='nui://bcc-train/imgs/trainImg.png'>"
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
                 .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("drivingMenu") .. "</div>"
                 ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -23vh;' src='nui://bcc-train/imgs/trainImg.png'>",
+                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             align = 'top-left',
             elements = elements,
         },

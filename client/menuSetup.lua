@@ -73,7 +73,7 @@ RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
     if #ownedTrains <= 0 then
         for k, v in pairs(Config.Trains) do
             elements[#elements + 1] = {
-                label = _U("trainModel") .. ' ' .. v.model .. ' ' .. _U("price") .. v.cost,
+                label = _U("trainModel") .. ' ' .. v.label .. ' ' .. _U("price") .. v.cost,
                 value = "train" .. k,
                 desc = "",
                 info = v
@@ -89,7 +89,7 @@ RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
             end
             if insert then
                 elements[#elements + 1] = {
-                    label = _U("trainModel") .. ' ' .. value.model .. ' ' .. _U("price") .. value.cost,
+                    label = _U("trainModel") .. ' ' .. value.label .. ' ' .. _U("price") .. value.cost,
                     value = "train" .. key,
                     desc = "",
                     info = value

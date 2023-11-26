@@ -32,7 +32,6 @@ files {
   "ui/js/*.*",
   "ui/css/*.*",
   "ui/fonts/*.*",
-  "ui/img/*.*",
 }
 
 version "1.0.1"

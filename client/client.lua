@@ -58,7 +58,7 @@ function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for s
                 VORPcore.NotifyRightTip(_U("tooFarFromTrain"), 4000)
                 TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, CreatedTrain)
                 RemoveBlip(TrainBlip)
-                MenuData.CloseAll()
+                VORPMenu.CloseAll()
                 DeleteEntity(CreatedTrain)
                 break
             end
@@ -73,13 +73,13 @@ function spawnTrain(trainTable, dbTable, dirChange) --credit to rsg_trains for s
                     end
                 else
                     drivingMenuOpened = false
-                    MenuData.CloseAll()
+                    VORPMenu.CloseAll()
                     hideHUD()
                 end
             else
                 if drivingMenuOpened then
                     drivingMenuOpened = false
-                    MenuData.CloseAll()
+                    VORPMenu.CloseAll()
                     hideHUD()
                 end
             end
@@ -247,17 +247,21 @@ end)
 
 ------- Cleanup -----
 AddEventHandler("onResourceStop", function(resource)
-    if resource == GetCurrentResourceName() then
-        if DoesEntityExist(CreatedTrain) then
-            DeleteEntity(CreatedTrain)
-            hideHUD()
-        end
-        if #blips > 0 then
-            for key, value in pairs(blips) do
-                RemoveBlip(value)
-            end
+    if (GetCurrentResourceName() ~= resourceName) then
+        return
+    end
+    if DoesEntityExist(CreatedTrain) then
+        DeleteEntity(CreatedTrain)
+        hideHUD()
+    end
+    if #blips > 0 then
+        for key, value in pairs(blips) do
+            RemoveBlip(value)
         end
     end
+    VORPMenu.CloseAll()
+    ClearPedTasks(PlayerPedId())
+    DisplayRadar(true)
 end)
 
 AddEventHandler("playerDropped", function ()

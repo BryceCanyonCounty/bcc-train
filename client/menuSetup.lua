@@ -1,30 +1,17 @@
 ----- Close Menu When Backspaced Out -----
-local inMenu, InMission = false, false
+local InMission = false
 EngineStarted = false
 
-AddEventHandler('bcc-train:MenuClose', function()
-    while inMenu do
-        Wait(5)
-        if IsControlJustReleased(0, 0x156F7119) then
-            inMenu = false
-            MenuData.CloseAll()
-            break
-        end
-    end
-end)
-
 RegisterNetEvent('bcc-train:MainStationMenu', function()
-    inMenu = true
-    TriggerEvent('bcc-train:MenuClose')
-    MenuData.CloseAll()
-
+    VORPMenu.CloseAll()
+    DisplayRadar(false)
     local elements = {
         { label = _U("ownedTrains"),     value = 'ownedtrains',     desc = _U("ownedTrains_desc") },
         { label = _U("buyTrains"),       value = 'buytrains',       desc = _U("buyTrains_desc") },
         { label = _U("deliveryMission"), value = 'deliveryMission', desc = _U("deliveryMission_desc") }
     }
 
-    MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu', 
         {
             title =
                 "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
@@ -33,24 +20,27 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
                 "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             align = 'top-left',
             elements = elements,
+            lastmenu = '',
         },
-        function(data)
+        function(data, menu)
             if data.current == 'backup' then
-                _G[data.trigger]()
+                return _G[data.trigger]()
             end
             local selectedOption = {
                 ['ownedtrains'] = function()
-                    MenuData.CloseAll()
+                    menu.close()
                     TriggerServerEvent('bcc-train:GetOwnedTrains', 'viewOwned')
                 end,
                 ['buytrains'] = function()
-                    MenuData.CloseAll()
+                    menu.close()
                     TriggerServerEvent('bcc-train:GetOwnedTrains', 'buyTrain')
                 end,
                 ['deliveryMission'] = function()
                     if CreatedTrain ~= nil then
                         if not InMission then
                             InMission = true
+                            menu.close()
+                            DisplayRadar(true)
                             deliveryMission()
                         else
                             VORPcore.NotifyRightTip(_U("inMission"), 4000)
@@ -60,15 +50,19 @@ RegisterNetEvent('bcc-train:MainStationMenu', function()
                     end
                 end
             }
-
             if selectedOption[data.current.value] then
                 selectedOption[data.current.value]()
             end
+        end,
+        function(data, menu)
+            menu.close()
+            ClearPedTasks(PlayerPedId())
+            DisplayRadar(true)
         end)
 end)
 
 RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
-    MenuData.CloseAll()
+    VORPMenu.CloseAll()
     local elements = {}
     if #ownedTrains <= 0 then
         for k, v in pairs(Config.Trains) do
@@ -98,7 +92,7 @@ RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
         end
     end
 
-    MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu',
         {
             title      =
                 "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
@@ -108,21 +102,27 @@ RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
-            itemHeight = "4vh"
+            itemHeight = "4vh",
+            lastmenu = '',
         },
-        function(data)
+        function(data, menu)
             if data.current == 'backup' then
-                _G[data.trigger]()
+                return _G[data.trigger]()
             end
             if data.current.value then
-                MenuData.CloseAll()
+                menu.close()
                 TriggerServerEvent('bcc-train:BoughtTrainHandler', data.current.info)
             end
+        end,
+        function(data, menu)
+            menu.close()
+            ClearPedTasks(PlayerPedId())
+            DisplayRadar(true)
         end)
 end)
 
 RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
-    MenuData.CloseAll()
+    VORPMenu.CloseAll()
     local elements = {}
     if #ownedTrains <= 0 then
         VORPcore.NotifyRightTip(_U("noOwnedTrains"), 4000)
@@ -137,7 +137,7 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
         end
     end
 
-    MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu',
         {
             title      =
                 "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
@@ -147,17 +147,18 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
-            itemHeight = "4vh"
+            itemHeight = "4vh",
+            lastmenu = '',
         },
-        function(data)
+        function(data, menu)
             if data.current == 'backup' then
-                _G[data.trigger]()
+                return _G[data.trigger]()
             end
             if data.current.value then
                 VORPcore.RpcCall("bcc-train:AllowTrainSpawn", function(result)
                     if result then
                         TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', true)
-                        MenuData.CloseAll() --have to be called above funct
+                        menu.close() --have to be called above funct
                         local configTable = nil
                         for k, v in pairs(Config.Trains) do
                             if data.current.info.trainModel == v.model then
@@ -171,19 +172,23 @@ RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
                     end
                 end)
             end
+        end,
+        function(data, menu)
+            menu.close()
+            ClearPedTasks(PlayerPedId())
+            DisplayRadar(true)
         end)
 end)
 
 function switchDirectionMenu(configTable, menuTable)
-    MenuData.CloseAll()
-    inMenu = false
+    VORPMenu.CloseAll()
 
     local elements = {
         { label = _U("changeSpawnDir"),   value = 'changeSpawnDir',   desc = _U("changeSpawnDir_desc") },
         { label = _U("noChangeSpawnDir"), value = 'noChangeSpawnDir', desc = _U("noChangeSpawnDir_desc") }
     }
 
-    MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu',
         {
             title      =
                 "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
@@ -193,28 +198,35 @@ function switchDirectionMenu(configTable, menuTable)
             subtext    = _U("trainMenu_desc"),
             align      = 'top-left',
             elements   = elements,
-            itemHeight = "4vh"
+            itemHeight = "4vh",
+            lastmenu = '',
         },
-        function(data)
+        function(data, menu)
             if data.current == 'backup' then
-                _G[data.trigger]()
+                return _G[data.trigger]()
             end
             if data.current.value == 'changeSpawnDir' then
-                MenuData.CloseAll()
+                menu.close()
+                DisplayRadar(true)
                 VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
                 spawnTrain(configTable, menuTable, true)
             else
-                MenuData.CloseAll()
+                menu.close()
+                DisplayRadar(true)
                 VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
                 spawnTrain(configTable, menuTable, false)
             end
+        end,
+        function(data, menu)
+            menu.close()
+            ClearPedTasks(PlayerPedId())
+            DisplayRadar(true)
         end)
 end
 
 local on, speed = false, 0 --used for track switching
 function drivingTrainMenu(trainConfigTable, trainDbTable)
-    MenuData.CloseAll()
-    inMenu = false --so this menu doesnt close
+    VORPMenu.CloseAll()
 
     local elements = {
         {
@@ -245,7 +257,7 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
     table.insert(elements, { label = _U("deleteTrain"), value = 'deleteTrain', desc = _U("deleteTrain_desc") }) --done here to ensure this is at the bottom of menu
 
     local forwardActive, backwardActive = false, false
-    MenuData.Open('default', GetCurrentResourceName(), 'menuapi',
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu',
         {
             title =
                 "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
@@ -254,10 +266,11 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
             align = 'top-left',
             elements = elements,
+            lastmenu = '',
         },
-        function(data)
+        function(data, menu)
             if data.current == 'backup' then
-                _G[data.trigger]()
+                return _G[data.trigger]()
             end
             local selectedOption = {
                 ['forward'] = function()
@@ -337,21 +350,21 @@ function drivingTrainMenu(trainConfigTable, trainDbTable)
                 ['stopEngine'] = function()
                     VORPcore.NotifyRightTip(_U("engineStopped"), 4000)
                     EngineStarted = false
-                    MenuData.CloseAll()
+                    VORPMenu.CloseAll()
                     drivingTrainMenu(trainConfigTable, trainDbTable)
                     Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
                 end,
                 ['startEngine'] = function()
                     VORPcore.NotifyRightTip(_U("engineStarted"), 4000)
                     EngineStarted = true
-                    MenuData.CloseAll()
+                    VORPMenu.CloseAll()
                     drivingTrainMenu(trainConfigTable, trainDbTable)
                     maxSpeedCalc(speed)
                 end,
                 ['deleteTrain'] = function()
                     TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, CreatedTrain)
                     RemoveBlip(TrainBlip)
-                    MenuData.CloseAll()
+                    VORPMenu.CloseAll()
                     DeleteEntity(CreatedTrain)
                     hideHUD()
                 end

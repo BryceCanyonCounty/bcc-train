@@ -1,386 +1,415 @@
------ Close Menu When Backspaced Out -----
-local InMission = false
-EngineStarted = false
+local switched = false
 
-RegisterNetEvent('bcc-train:MainStationMenu', function()
+function MainMenu(station)
     VORPMenu.CloseAll()
     DisplayRadar(false)
     local elements = {
-        { label = _U("ownedTrains"),     value = 'ownedtrains',     desc = _U("ownedTrains_desc") },
-        { label = _U("buyTrains"),       value = 'buytrains',       desc = _U("buyTrains_desc") },
-        { label = _U("deliveryMission"), value = 'deliveryMission', desc = _U("deliveryMission_desc") }
+        { label = _U('ownedTrains'),     value = 'owned',     desc = _U('ownedTrains_desc') },
+        { label = _U('buyTrains'),       value = 'buy',       desc = _U('buyTrains_desc') },
+        { label = _U('sellTrains'),       value = 'sell',       desc = _U('sellTrains_desc') },
+        { label = _U('deliveryMission'), value = 'deliveryMission', desc = _U('deliveryMission_desc') }
     }
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu', {
+        title = Stations[station].shop.name,
+        subtext = '',
+        align = 'top-left',
+        elements = elements,
+        itemHeight = '3.0vh',
+        lastmenu = '',
+    },function(data, menu)
+        if data.current == 'backup' then
+            return _G[data.trigger]()
+        end
+        if data.current.value == 'owned' then
+            local myTrains = VORPcore.Callback.TriggerAwait('bcc-train:GetMyTrains')
+            if #myTrains <= 0 then
+                VORPcore.NotifyRightTip(_U('noOwnedTrains'), 4000)
+            else
+                OwnedMenu(myTrains, station)
+            end
 
-    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu', 
-        {
-            title =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainStation") .. "</div>"
-                ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
-            align = 'top-left',
-            elements = elements,
-            lastmenu = '',
-        },
-        function(data, menu)
-            if data.current == 'backup' then
-                return _G[data.trigger]()
+        elseif data.current.value == 'buy' then
+            local myTrains = VORPcore.Callback.TriggerAwait('bcc-train:GetMyTrains')
+            local maxTrains = Config.maxTrains
+            if #myTrains >= maxTrains then
+                VORPcore.NotifyRightTip(_U('trainLimit') .. maxTrains .. _U('trains'), 4000)
+            else
+                BuyMenu(myTrains, station)
             end
-            local selectedOption = {
-                ['ownedtrains'] = function()
-                    menu.close()
-                    TriggerServerEvent('bcc-train:GetOwnedTrains', 'viewOwned')
-                end,
-                ['buytrains'] = function()
-                    menu.close()
-                    TriggerServerEvent('bcc-train:GetOwnedTrains', 'buyTrain')
-                end,
-                ['deliveryMission'] = function()
-                    if CreatedTrain ~= nil then
-                        if not InMission then
-                            InMission = true
-                            menu.close()
-                            DisplayRadar(true)
-                            deliveryMission()
-                        else
-                            VORPcore.NotifyRightTip(_U("inMission"), 4000)
-                        end
-                    else
-                        VORPcore.NotifyRightTip(_U("noTrain"), 4000)
-                    end
-                end
-            }
-            if selectedOption[data.current.value] then
-                selectedOption[data.current.value]()
+
+        elseif data.current.value == 'sell' then
+            local myTrains = VORPcore.Callback.TriggerAwait('bcc-train:GetMyTrains')
+            if #myTrains <= 0 then
+                VORPcore.NotifyRightTip(_U('noOwnedTrains'), 4000)
+            else
+                SellMenu(myTrains, station)
             end
-        end,
-        function(data, menu)
+
+        elseif data.current.value == 'deliveryMission' then
+            if not MyTrain then
+                VORPcore.NotifyRightTip(_U('noTrain'), 4000)
+                return
+            end
+            if InMission then
+                VORPcore.NotifyRightTip(_U('inMission'), 4000)
+                return
+            end
+            local onCooldown = VORPcore.Callback.TriggerAwait('bcc-train:CheckPlayerCooldown', 'delivery')
+            if onCooldown then
+                VORPcore.NotifyRightTip(_U('cooldown'), 4000)
+                return
+            end
+            InMission = true
             menu.close()
-            ClearPedTasks(PlayerPedId())
             DisplayRadar(true)
-        end)
-end)
+            DeliveryMission(station)
+        end
+    end,
+    function(data, menu)
+        menu.close()
+        DisplayRadar(true)
+    end)
+end
 
-RegisterNetEvent('bcc-train:BuyTrainMenu', function(ownedTrains)
+function BuyMenu(myTrains, station)
     VORPMenu.CloseAll()
     local elements = {}
-    if #ownedTrains <= 0 then
-        for k, v in pairs(Config.Trains) do
+    if #myTrains <= 0 then
+        for train, trainCfg in pairs(Trains) do
             elements[#elements + 1] = {
-                label = _U("trainModel") .. ' ' .. v.label .. ' ' .. _U("price") .. v.cost,
-                value = "train" .. k,
-                desc = "",
-                info = v
+                label = trainCfg.label,
+                value = train,
+                desc = _U('price') .. trainCfg.price .. '<br>' .. '<br>' .. _U('maxSpeed') .. trainCfg.maxSpeed,
+                info = trainCfg
             }
         end
     else
-        for key, value in pairs(Config.Trains) do
+        for train, trainCfg in pairs(Trains) do
             local insert = true
-            for k, v in pairs(ownedTrains) do
-                if value.model == v.trainModel then
+            for _, myTrainData in pairs(myTrains) do
+                if trainCfg.model == myTrainData.trainModel then
                     insert = false
                 end
             end
             if insert then
                 elements[#elements + 1] = {
-                    label = _U("trainModel") .. ' ' .. value.label .. ' ' .. _U("price") .. value.cost,
-                    value = "train" .. key,
-                    desc = "",
-                    info = value
+                    label = trainCfg.label,
+                    value = train,
+                    desc = _U('price') .. trainCfg.price .. '<br>' .. '<br>' .. _U('maxSpeed') .. trainCfg.maxSpeed,
+                    info = trainCfg
+                }
+            end
+        end
+        if #elements <= 0 then
+            elements = {
+                { label = _U('ownAllTrains'),     value = 'noBuy',     desc = '' }
+            }
+        end
+    end
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu', {
+        title = Stations[station].shop.name,
+        subtext = _U('purchase'),
+        align = 'top-left',
+        elements = elements,
+        itemHeight = '3vh',
+        lastmenu = 'MainMenu',
+    },function(data, menu)
+        if data.current == 'backup' then
+            return _G[data.trigger](station)
+        end
+        if data.current.value ~= 'noBuy' then
+            TriggerServerEvent('bcc-train:BuyTrain', data.current.info)
+            MainMenu(station)
+        else
+            MainMenu(station)
+        end
+    end,
+    function(data, menu)
+        menu.close()
+        DisplayRadar(true)
+    end)
+end
+
+function OwnedMenu(myTrains, station)
+    VORPMenu.CloseAll()
+    local elements = {}
+    for _, trainCfg in pairs(Trains) do
+        for myTrain, myTrainData in pairs(myTrains) do
+            if myTrainData.trainModel == trainCfg.model then
+                elements[#elements + 1] = {
+                    label = trainCfg.label,
+                    value = myTrain,
+                    desc  = _U('maxSpeed') .. trainCfg.maxSpeed,
+                    info  = myTrainData
                 }
             end
         end
     end
-
-    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu',
-        {
-            title      =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
-                ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
-            subtext    = _U("trainMenu_desc"),
-            align      = 'top-left',
-            elements   = elements,
-            itemHeight = "4vh",
-            lastmenu = '',
-        },
-        function(data, menu)
-            if data.current == 'backup' then
-                return _G[data.trigger]()
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu', {
+        title = Stations[station].shop.name,
+        subtext = _U('selectTrain'),
+        align = 'top-left',
+        elements = elements,
+        itemHeight = '3vh',
+        lastmenu = 'MainMenu',
+    },
+    function(data, menu)
+        if data.current == 'backup' then
+            return _G[data.trigger](station)
+        end
+        if data.current.value then
+            local canSpawn = VORPcore.Callback.TriggerAwait('bcc-train:CheckTrainSpawn')
+            if canSpawn then
+                menu.close() --have to be called above funct
+                local trainData = nil
+                for _, trainCfg in pairs(Trains) do
+                    if data.current.info.trainModel == trainCfg.model then
+                        trainData = trainCfg
+                        break
+                    end
+                end
+                DirectionMenu(trainData, data.current.info, station, myTrains)
+            else
+                VORPcore.NotifyRightTip(_U('trainSpawnedAlrady'), 4000)
             end
-            if data.current.value then
-                menu.close()
-                TriggerServerEvent('bcc-train:BoughtTrainHandler', data.current.info)
-            end
-        end,
-        function(data, menu)
-            menu.close()
-            ClearPedTasks(PlayerPedId())
-            DisplayRadar(true)
-        end)
-end)
+        end
+    end,
+    function(data, menu)
+        menu.close()
+        DisplayRadar(true)
+    end)
+end
 
-RegisterNetEvent('bcc-train:OwnedTrainsMenu', function(ownedTrains)
+function SellMenu(myTrains, station)
     VORPMenu.CloseAll()
     local elements = {}
-    if #ownedTrains <= 0 then
-        VORPcore.NotifyRightTip(_U("noOwnedTrains"), 4000)
-    else
-        for key, value in pairs(ownedTrains) do
-            elements[#elements + 1] = {
-                label = _U("trainModel") .. ' ' .. value.trainModel,
-                value = "train" .. key,
-                desc = "",
-                info = value
-            }
+    for _, trainCfg in pairs(Trains) do
+        for myTrain, myTrainData in pairs(myTrains) do
+            if myTrainData.trainModel == trainCfg.model then
+                elements[#elements + 1] = {
+                    label = trainCfg.label,
+                    value = myTrain,
+                    desc  = _U('sellPrice') .. math.floor(trainCfg.price * Config.sellPrice),
+                    info  = myTrainData
+                }
+            end
         end
     end
-
-    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu',
-        {
-            title      =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
-                ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
-            subtext    = _U("trainMenu_desc"),
-            align      = 'top-left',
-            elements   = elements,
-            itemHeight = "4vh",
-            lastmenu = '',
-        },
-        function(data, menu)
-            if data.current == 'backup' then
-                return _G[data.trigger]()
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu', {
+        title = Stations[station].shop.name,
+        subtext = _U('sellTrains_sub'),
+        align = 'top-left',
+        elements = elements,
+        itemHeight = '3vh',
+        lastmenu = 'MainMenu',
+    },
+    function(data, menu)
+        if data.current == 'backup' then
+            return _G[data.trigger](station)
+        end
+        if data.current.value then
+            local sold = VORPcore.Callback.TriggerAwait('bcc-train:SellTrain', data.current.info)
+            if sold then
+                MainMenu(station)
             end
-            if data.current.value then
-                VORPcore.RpcCall("bcc-train:AllowTrainSpawn", function(result)
-                    if result then
-                        TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', true)
-                        menu.close() --have to be called above funct
-                        local configTable = nil
-                        for k, v in pairs(Config.Trains) do
-                            if data.current.info.trainModel == v.model then
-                                configTable = v
-                                break
-                            end
-                        end
-                        switchDirectionMenu(configTable, data.current.info)
-                    else
-                        VORPcore.NotifyRightTip(_U("trainSpawnedAlrady"), 4000)
-                    end
-                end)
-            end
-        end,
-        function(data, menu)
-            menu.close()
-            ClearPedTasks(PlayerPedId())
-            DisplayRadar(true)
-        end)
-end)
-
-function switchDirectionMenu(configTable, menuTable)
-    VORPMenu.CloseAll()
-
-    local elements = {
-        { label = _U("changeSpawnDir"),   value = 'changeSpawnDir',   desc = _U("changeSpawnDir_desc") },
-        { label = _U("noChangeSpawnDir"), value = 'noChangeSpawnDir', desc = _U("noChangeSpawnDir_desc") }
-    }
-
-    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu',
-        {
-            title      =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("trainMenu") .. "</div>"
-                ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
-            subtext    = _U("trainMenu_desc"),
-            align      = 'top-left',
-            elements   = elements,
-            itemHeight = "4vh",
-            lastmenu = '',
-        },
-        function(data, menu)
-            if data.current == 'backup' then
-                return _G[data.trigger]()
-            end
-            if data.current.value == 'changeSpawnDir' then
-                menu.close()
-                DisplayRadar(true)
-                VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
-                spawnTrain(configTable, menuTable, true)
-            else
-                menu.close()
-                DisplayRadar(true)
-                VORPcore.NotifyRightTip(_U("trainSpawned"), 4000)
-                spawnTrain(configTable, menuTable, false)
-            end
-        end,
-        function(data, menu)
-            menu.close()
-            ClearPedTasks(PlayerPedId())
-            DisplayRadar(true)
-        end)
+        end
+    end,
+    function(data, menu)
+        menu.close()
+        DisplayRadar(true)
+    end)
 end
 
-local on, speed = false, 0 --used for track switching
-function drivingTrainMenu(trainConfigTable, trainDbTable)
+function DirectionMenu(trainCfg, myTrainData, station, myTrains)
     VORPMenu.CloseAll()
+    local elements = {
+        { label = _U('changeSpawnDir'),   value = 'reverse',   desc = _U('changeSpawnDir_desc') },
+        { label = _U('noChangeSpawnDir'), value = 'noChange', desc = _U('noChangeSpawnDir_desc') }
+    }
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu', {
+        title      = Stations[station].shop.name,
+        subtext    = '',
+        align      = 'top-left',
+        elements   = elements,
+        itemHeight = '3vh',
+        lastmenu   = 'OwnedMenu'
+    },
+    function(data, menu)
+        if data.current == 'backup' then
+            return _G[data.trigger](myTrains, station)
+        end
+        if data.current.value == 'reverse' then
+            menu.close()
+            DisplayRadar(true)
+            SpawnTrain(trainCfg, myTrainData, true, station)
+        else
+            menu.close()
+            DisplayRadar(true)
+            SpawnTrain(trainCfg, myTrainData, false, station)
+        end
+    end,
+    function(data, menu)
+        menu.close()
+        DisplayRadar(true)
+    end)
+end
 
+function DrivingMenu(trainCfg, myTrainData)
+    VORPMenu.CloseAll()
+    local speed = 0
+    local forwardActive = false
+    local backwardActive = false
     local elements = {
         {
-            label = _U("speed"),
+            label = _U('speed'),
             value = speed,
-            desc = _U("speed_desc"),
+            desc = '',
             type = 'slider',
             min = 0,
-            max =
-                trainConfigTable.maxSpeed,
+            max = trainCfg.maxSpeed,
             hop = 1.0
         },
-        { label = _U("switchTrack"),  value = 'switchtrack', desc = _U("switchTrack_desc") },
+        { label = _U('switchTrack'),  value = 'switchtrack', desc = '' },
     }
-    if Config.CruiseControl then
-        table.insert(elements, { label = _U("forward"), value = 'forward', desc = _U("forward_desc") })
-        table.insert(elements, { label = _U("backward"), value = 'backward', desc = _U("backward_desc") })
+    if Config.cruiseControl then
+        table.insert(elements, { label = _U('forward'), value = 'forward', desc = '' })
+        table.insert(elements, { label = _U('backward'), value = 'backward', desc = '' })
     end
     if EngineStarted then
-        table.insert(elements, { label = _U("stopEngine"),   value = 'stopEngine',  desc = _U("stopEngine_desc") })
+        table.insert(elements, { label = _U('stopEngine'),   value = 'stopEngine',  desc = '' })
     else
-        table.insert(elements, { label = _U("startEnging"),  value = 'startEngine', desc = _U("startEnging_desc") })
+        table.insert(elements, { label = _U('startEngine'),  value = 'startEngine', desc = '' })
     end
-    if trainConfigTable.allowInventory then
-        table.insert(elements, { label = _U("openInv"), value = 'openInv', desc = _U("openInv_desc") })
+    if trainCfg.inventory.enabled then
+        table.insert(elements, { label = _U('openInv'), value = 'openInv', desc = '' })
     end
 
-    table.insert(elements, { label = _U("deleteTrain"), value = 'deleteTrain', desc = _U("deleteTrain_desc") }) --done here to ensure this is at the bottom of menu
+    table.insert(elements, { label = _U('deleteTrain'), value = 'deleteTrain', desc = '' }) --done here to ensure this is at the bottom of menu
 
-    local forwardActive, backwardActive = false, false
-    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu',
-        {
-            title =
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; margin-top: 4vh; position:relative; right: 12vh;' src='nui://bcc-train/imgs/trainImg.png'>"
-                .. "<div style='position: relative; right: 6vh; margin-top: 4vh;'>" .. _U("drivingMenu") .. "</div>"
-                ..
-                "<img style='max-height:5vh;max-width:7vh; float: left;text-align: center; top: -4vh; position: relative; right: -19vh;' src='nui://bcc-train/imgs/trainImg.png'>",
-            align = 'top-left',
-            elements = elements,
-            lastmenu = '',
-        },
-        function(data, menu)
-            if data.current == 'backup' then
-                return _G[data.trigger]()
-            end
-            local selectedOption = {
-                ['forward'] = function()
-                    if EngineStarted then
-                        if not backwardActive then
-                            if not forwardActive then
-                                if TrainFuel ~= 0 then
-                                    forwardActive = true
-                                    VORPcore.NotifyRightTip(_U("forwardEnabled"), 4000)
-                                    while forwardActive do
-                                        Wait(100)
-                                        local cx, cy, cz = GetEntityCoords(CreatedTrain)
-                                        if GetDistanceBetweenCoords(517.56, 1757.27, 188.34, cx, cy, cz) < 1000 then
-                                            VORPcore.NotifyRightTip(_U("cruiseDisabledInRegion"), 4000)
-                                            forwardActive = false break
-                                        end
-                                        if speed ~= 0 and speed ~= nil then --stops error
-                                            SetTrainSpeed(CreatedTrain, speed + .1)
-                                        end
-                                    end
-                                else
-                                    VORPcore.NotifyRightTip(_U("noCruiseNoFuel"), 4000)
-                                end
-                            else
-                                VORPcore.NotifyRightTip(_U("forwardDisbaled"), 4000)
-                                forwardActive = false
-                            end
-                        else
-                            VORPcore.NotifyRightTip(_U("backwardsIsOn"), 4000)
-                        end
-                    end
-                end,
-                ['backward'] = function()
-                    if EngineStarted then
+    VORPMenu.Open('default', GetCurrentResourceName(), 'vorp_menu', {
+        title      = _U('drivingMenu'),
+        subtext    = '',
+        align      = 'top-left',
+        elements   = elements,
+        itemHeight = '3vh',
+        lastmenu   = ''
+    },
+    function(data)
+        if data.current == 'backup' then
+            return _G[data.trigger]()
+        end
+        local selectedOption = {
+            ['forward'] = function()
+                if EngineStarted then
+                    if not backwardActive then
                         if not forwardActive then
-                            if not backwardActive then
-                                if TrainFuel ~= 0 then
-                                    backwardActive = true
-                                    VORPcore.NotifyRightTip(_U("backwardEnabled"), 4000)
-                                    while backwardActive do
-                                        Wait(100)
-                                        local cx, cy, cz = GetEntityCoords(CreatedTrain)
-                                        if GetDistanceBetweenCoords(517.56, 1757.27, 188.34, cx, cy, cz) < 1000 then
-                                            VORPcore.NotifyRightTip(_U("cruiseDisabledInRegion"), 4000)
-                                            backwardActive = false break
-                                        end
-                                        if speed ~= 0 and speed ~= nil then --stops error
-                                            SetTrainSpeed(CreatedTrain, speed + .1 - speed * 2)
-                                        end
+                            if TrainFuel >= 1 then
+                                forwardActive = true
+                                VORPcore.NotifyRightTip(_U('forwardEnabled'), 4000)
+                                while forwardActive do
+                                    Wait(100)
+                                    local distance = #(GetEntityCoords(MyTrain) - vector3(517.56, 1757.27, 188.34)) -- Bacchus Bridge
+                                    if distance <= 1000 then
+                                        VORPcore.NotifyRightTip(_U('cruiseDisabledInRegion'), 4000)
+                                        forwardActive = false
+                                        break
                                     end
-                                else
-                                    VORPcore.NotifyRightTip(_U("noCruiseNoFuel"), 4000)
+                                    if speed ~= 0 and speed ~= nil then --stops error
+                                        SetTrainSpeed(MyTrain, speed + .1)
+                                    end
                                 end
                             else
-                                VORPcore.NotifyRightTip(_U("backwardDisabled"), 4000)
-                                backwardActive = false
+                                VORPcore.NotifyRightTip(_U('noCruiseNoFuel'), 4000)
                             end
                         else
-                            VORPcore.NotifyRightTip(_U("forwardsIsOn"), 4000)
+                            VORPcore.NotifyRightTip(_U('forwardDisbaled'), 4000)
+                            forwardActive = false
                         end
-                    end
-                end,
-                ['switchtrack'] = function()
-                    if not on then
-                        trackSwitch(true)
-                        on = true
-                        VORPcore.NotifyRightTip(_U("switchingOn"), 4000)
                     else
-                        trackSwitch(false)
-                        on = false
-                        VORPcore.NotifyRightTip(_U("switchingOn"), 4000)
+                        VORPcore.NotifyRightTip(_U('backwardsIsOn'), 4000)
                     end
-                end,
-                ['openInv'] = function()
-                    TriggerServerEvent('bcc-train:OpenTrainInv', trainDbTable.trainid)
-                end,
-                ['stopEngine'] = function()
-                    VORPcore.NotifyRightTip(_U("engineStopped"), 4000)
-                    EngineStarted = false
-                    VORPMenu.CloseAll()
-                    drivingTrainMenu(trainConfigTable, trainDbTable)
-                    Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, 0.0)
-                end,
-                ['startEngine'] = function()
-                    VORPcore.NotifyRightTip(_U("engineStarted"), 4000)
-                    EngineStarted = true
-                    VORPMenu.CloseAll()
-                    drivingTrainMenu(trainConfigTable, trainDbTable)
-                    maxSpeedCalc(speed)
-                end,
-                ['deleteTrain'] = function()
-                    TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, CreatedTrain)
-                    RemoveBlip(TrainBlip)
-                    VORPMenu.CloseAll()
-                    DeleteEntity(CreatedTrain)
-                    hideHUD()
                 end
-            }
-
-            if selectedOption[data.current.value] then
-                selectedOption[data.current.value]()
-            else --has to be done this way to get a vector menu option
-                speed = data.current.value
-                maxSpeedCalc(speed)
+            end,
+            ['backward'] = function()
+                if EngineStarted then
+                    if not forwardActive then
+                        if not backwardActive then
+                            if TrainFuel >=1 then
+                                backwardActive = true
+                                VORPcore.NotifyRightTip(_U('backwardEnabled'), 4000)
+                                while backwardActive do
+                                    Wait(100)
+                                    local distance = #(GetEntityCoords(MyTrain) - vector3(517.56, 1757.27, 188.34)) -- Bacchus Bridge
+                                    if distance <= 1000 then
+                                        VORPcore.NotifyRightTip(_U('cruiseDisabledInRegion'), 4000)
+                                        backwardActive = false break
+                                    end
+                                    if speed ~= 0 and speed ~= nil then --stops error
+                                        SetTrainSpeed(MyTrain, speed + .1 - speed * 2)
+                                    end
+                                end
+                            else
+                                VORPcore.NotifyRightTip(_U('noCruiseNoFuel'), 4000)
+                            end
+                        else
+                            VORPcore.NotifyRightTip(_U('backwardDisabled'), 4000)
+                            backwardActive = false
+                        end
+                    else
+                        VORPcore.NotifyRightTip(_U('forwardsIsOn'), 4000)
+                    end
+                end
+            end,
+            ['switchtrack'] = function()
+                if not switched then
+                    TrackSwitch(true)
+                    switched = true
+                    VORPcore.NotifyRightTip(_U('switchingOn'), 4000)
+                else
+                    TrackSwitch(false)
+                    switched = false
+                    VORPcore.NotifyRightTip(_U('switchingOn'), 4000)
+                end
+            end,
+            ['openInv'] = function()
+                TriggerServerEvent('bcc-train:OpenInventory', myTrainData.trainid)
+            end,
+            ['stopEngine'] = function()
+                VORPcore.NotifyRightTip(_U('engineStopped'), 4000)
+                EngineStarted = false
+                --VORPMenu.CloseAll()
+                DrivingMenu(trainCfg, myTrainData)
+                Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
+            end,
+            ['startEngine'] = function()
+                if TrainFuel >= 1 and TrainCondition >=1 then
+                    VORPcore.NotifyRightTip(_U('engineStarted'), 4000)
+                    EngineStarted = true
+                    --VORPMenu.CloseAll()
+                    DrivingMenu(trainCfg, myTrainData)
+                    MaxSpeedCalc(speed)
+                else
+                    VORPcore.NotifyRightTip(_U('checkTrain'), 4000)
+                end
+            end,
+            ['deleteTrain'] = function()
+                TriggerEvent('bcc-train:ResetTrain')
+                HideHUD()
             end
-        end)
+        }
+        if selectedOption[data.current.value] then
+            selectedOption[data.current.value]()
+        else --has to be done this way to get a vector menu option
+            speed = data.current.value
+            MaxSpeedCalc(speed)
+        end
+    end)
 end
 
-function maxSpeedCalc(speed)
+function MaxSpeedCalc(speed)
     local setMaxSpeed = speed + .1
-    if setMaxSpeed > 30.0 then setMaxSpeed = 29.9 end
-    Citizen.InvokeNative(0x9F29999DFDF2AEB8, CreatedTrain, setMaxSpeed)
+    if setMaxSpeed > 30.0 then
+        setMaxSpeed = 29.9
+    end
+    Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, setMaxSpeed)
 end

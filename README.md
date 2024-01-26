@@ -1,51 +1,69 @@
 # bcc-train
-> This is the best, fully fledged train script for RedM! A multitude of features like built in track switching, train inventories, ownership and more!
 
-# Features
+## Description
+This is the best, full fledged train script for RedM! A multitude of features like built in track switching, train inventories, ownership and more!
+
+## Features
+- Buy and Sell trains at the train stations
 - Track Switching
+- Bacchus Bridge explodable
 - Multiple train stations
-- Job locked
-- Purchasable trains which are stored in a database
-- Each train has thier own inventory
+- Station access can be limited by job and jobgrade
+- Station hours may be set individually for each station or disabled to allow the station to remain open
+- Purchased trains are stored in the database
+- Can set a max number of trains a player can own
+- Individual inventory size for each train model
 - Config option to allow cruise control
 - Configurable train speeds
 - Trains need fuel to run
 - Maintain the train to keep it functional
-- Station blips
+- Station blips are colored and changeable per stable location
+- Blips can change color reflecting if station is open, closed or job locked
 - Webhooks
-- Bacchus Bridge explodable
+- Distance-based NPC spawns
+- Server-based delivery cooldown (persists through client relog)
 - Exports for developers to use
 
-# How to install
-- Download the zip from the latest release
+## Dependencies
+- [vorp_core](https://github.com/VORPCORE/vorp-core-lua)
+- [vorp_inventory](https://github.com/VORPCORE/vorp_inventory-lua)
 
-# How to use
-- To refuel/repair train hold right click while near the driver seat follow prompt
-- Buy a train from a station spawn it and have fun!
+## Installation
+- Download the latest release `bcc-train.zip` at [/releases/latest](https://github.com/BryceCanyonCounty/bcc-train/releases/latest)
+- Add `bcc-train` folder to your resources folder
+- Add `ensure bcc-train` to your `resources.cfg`
+- Run the included database file `train.sql`
+- Add images to: `...\vorp_inventory\html\img`
+- Make sure dependencies are ensured above `bcc-train`
+- Restart server
+
+## How to use
+- To refuel/repair train hold right click while near the driver seat to show prompts
+- Buy a train from a station, spawn it and have fun!
 
 ## Api
 ### Check if train spawned! (Server Side Use only)
-- To check if a train has been spawned/is in-use (This is useful as only 1 train should be spawned at a time on a server typically)
+- Returns true if a train has been spawned false if no train is spawned/in-use. Only 1 train should be spawned at a time on a server typically.
 ```Lua
 local retval = exports['bcc-train']:CheckIfTrainIsSpawned()
 ```
-- Returns true if a train has been spawned false if no train is spawned/in-use
 
 ### Get Train Entity (Server Side Use Only)
-- To get the train entity (returned entity is meant to be used on the client side, this export should only be used if the check if train spawned export returns true if the train does not exist this export will always return false)
+- If a train exists, this returns the train entity to be used on the client side, returns false if no train is spawned/in-use.
 ```Lua
 local retval = exports['bcc-train']:GetTrainEntity()
 ```
-- If a  train exists this returns the train entity to be used on the client side, returns false if no train is spawned/in-use
 
 ### Check if Bacchus Bridge Destroyed (Server Side Use Only)
-- To check if Bacchus Bridge is destroyed or not
+- Returns true if the bridge is destroyed false if not.
 ```Lua
 local retval = exports['bcc-train']:BacchusBridgeDestroyed()
 ```
-- Returns true if the bridge is destroyed false if not
 
-# Side Notes
+## Credits and Notes
 - All imagery was provided by Lady Grey our in house designer
 - Thanks sav for the nui
 - Images for items can be found under the imgs/itemImages folder
+
+## GitHub
+- https://github.com/BryceCanyonCounty/bcc-train

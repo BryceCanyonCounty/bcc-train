@@ -1,198 +1,251 @@
-VORPcore = {}
-TriggerEvent("getCore", function(core)
-  VORPcore = core
-end)
-VORPInv = {}
-VORPInv = exports.vorp_inventory:vorp_inventoryApi()
+VORPcore = exports.vorp_core:GetCore()
 BccUtils = exports['bcc-utils'].initiate()
 
-RegisterServerEvent('bcc-train:JobCheck', function()
-  local _source = source
-  local Character = VORPcore.getUser(_source).getUsedCharacter
-  if Character.job == Config.ConductorJob then
-    TriggerClientEvent('bcc-train:MainStationMenu', _source)
-  else
-    VORPcore.NotifyRightTip(_source, _U("wrongJob"), 4000)
-  end
-end)
-
-TrainSpawned, TrainEntity = false, nil
-VORPcore.addRpcCallback("bcc-train:AllowTrainSpawn", function(source, cb)
-  if TrainSpawned then
-    cb(false)
-  else
-    cb(true)
-  end
-end)
-
-RegisterServerEvent('bcc-train:UpdateTrainSpawnVar', function(updateBool, createdTrain)
-  if updateBool then
-    TrainSpawned = true
-    TrainEntity = createdTrain
-    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"), _U("trainSpawnedwebMain"))
-  else
-    TrainSpawned = false
-    TrainEntity = nil
-    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("trainSpawnedWeb"), _U("trainNotSpawnedWeb"))
-  end
-end)
-
-CreateThread(function() --Registering the inventories on server start
-  local result = MySQL.query.await("SELECT * FROM train")
-  for k, v in pairs(result) do
-    for key, value in pairs(Config.Trains) do
-      if v.trainModel == value.model then
-        VORPInv.removeInventory('Train_' .. v.trainid .. '_bcc-traininv')
-        Wait(50)
-        VORPInv.registerInventory('Train_' .. v.trainid .. '_bcc-traininv', _U("trainInv"), value.invLimit, true, true,
-          true)
-        break
-      end
-    end
-  end
-end)
-
-RegisterServerEvent('bcc-train:GetOwnedTrains', function(type)
-  local _source = source
-  local Character = VORPcore.getUser(_source).getUsedCharacter
-  local param = { ['charidentifier'] = Character.charIdentifier }
-  local result = MySQL.query.await("SELECT * FROM train WHERE charidentifier=@charidentifier", param)
-  if type == 'viewOwned' then
-    TriggerClientEvent('bcc-train:OwnedTrainsMenu', _source, result)
-  elseif type == 'buyTrain' then
-    TriggerClientEvent('bcc-train:BuyTrainMenu', _source, result)
-  end
-end)
-
-RegisterServerEvent('bcc-train:BoughtTrainHandler', function(trainTable)
-  local _source = source
-  local Character = VORPcore.getUser(_source).getUsedCharacter
-  local param = {
-    ['charidentifier'] = Character.charIdentifier,
-    ['trainModel'] = trainTable.model,
-    ['fuel'] = trainTable.maxFuel,
-    ['trainCond'] = trainTable.maxCondition
-  }
-  if Character.money >= trainTable.cost then
-    MySQL.query.await(
-      "INSERT INTO train (`charidentifier`,`trainModel`,`fuel`,`condition`) VALUES (@charidentifier,@trainModel,@fuel,@trainCond)",
-      param)
-    Character.removeCurrency(0, trainTable.cost)
-    VORPcore.NotifyRightTip(_source, _U("trainBought"), 4000)
-    BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train',
-      'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg',
-      _U("charIdWeb") .. Character.charIdentifier, _U("boughtTrainWeb") .. trainTable.model)
-  else
-    VORPcore.NotifyRightTip(_source, _U("notEnoughMoney"), 4000)
-  end
-end)
-
-RegisterServerEvent('bcc-train:OpenTrainInv', function(trainId)
-  local _source = source
-  local param = { ['trainId'] = trainId }
-  local result = MySQL.query.await("SELECT * FROM train WHERE trainid=@trainId", param)
-  if #result > 0 then
-    for key, value in pairs(Config.Trains) do
-      if result[1].trainModel == value.model then
-        VORPInv.removeInventory('Train_' .. result[1].trainid .. '_bcc-traininv')
-        Wait(50)
-        VORPInv.registerInventory('Train_' .. result[1].trainid .. '_bcc-traininv', _U("trainInv"), value.invLimit, true,
-          true, true)
-        Wait(50)
-        VORPInv.OpenInv(_source, 'Train_' .. trainId .. '_bcc-traininv')
-      end
-    end
-  end
-end)
-
-RegisterServerEvent('bcc-train:DecTrainFuel', function(trainid, trainFuel)
-  local _source = source
-  local param = { ['trainId'] = trainid, ['fuel'] = trainFuel - Config.FuelSettings.FuelDecreaseAmount }
-  MySQL.query.await('UPDATE train SET fuel=@fuel WHERE trainid=@trainId', param)
-  local result = MySQL.query.await("SELECT * FROM train WHERE trainid=@trainId", param)
-  if #result > 0 then
-    TriggerClientEvent('bcc-train:CleintFuelUpdate', _source, result[1].fuel)
-  end
-end)
-
-RegisterServerEvent('bcc-train:DecTrainCond', function(trainid, trainCondition)
-  local _source = source
-  local param = { ['trainId'] = trainid, ['cond'] = trainCondition - Config.ConditionSettings.CondDecreaseAmount }
-  MySQL.query.await('UPDATE train SET `condition`=@cond WHERE trainid=@trainId', param)
-  local result = MySQL.query.await("SELECT * FROM train WHERE trainid=@trainId", param)
-  if #result > 0 then
-    TriggerClientEvent('bcc-train:CleintCondUpdate', _source, result[1].condition)
-  end
-end)
-
-RegisterServerEvent('bcc-train:FuelTrain', function(trainId, configTable)
-  local _source = source
-  local itemCount = VORPInv.getItemCount(_source, Config.FuelSettings.TrainFuelItem)
-  if itemCount >= Config.FuelSettings.TrainFuelItemAmount then
-    VORPInv.subItem(_source, Config.FuelSettings.TrainFuelItem, Config.FuelSettings.FuelDecreaseAmount)
-    local param = { ['trainId'] = trainId, ['fuel'] = configTable.maxFuel }
-    MySQL.query.await("UPDATE train SET `fuel`=@fuel WHERE trainid=@trainId", param)
-    TriggerClientEvent('bcc-train:CleintFuelUpdate', _source, configTable.maxFuel)
-    VORPcore.NotifyRightTip(_source, _U("fuelAdded"), 4000)
-  else
-    VORPcore.NotifyRightTip(_source, _U("noItem"), 4000)
-  end
-end)
-
-RegisterServerEvent('bcc-train:RepairTrain', function(trainId, configTable)
-  local _source = source
-  local itemCount = VORPInv.getItemCount(_source, Config.ConditionSettings.TrainCondItem)
-  if itemCount >= Config.ConditionSettings.TrainCondItemAmount then
-    VORPInv.subItem(_source, Config.ConditionSettings.TrainCondItem, Config.ConditionSettings.TrainCondItemAmount)
-    local param = { ['trainId'] = trainId, ['cond'] = configTable.maxCondition }
-    MySQL.query.await("UPDATE train SET `condition`=@cond WHERE trainid=@trainId", param)
-    TriggerClientEvent('bcc-train:CleintCondUpdate', _source, configTable.maxCondition)
-    VORPcore.NotifyRightTip(_source, _U("trainRepaired"), 4000)
-  else
-    VORPcore.NotifyRightTip(_source, _U("noItem"), 4000)
-  end
-end)
-
------- Baccus bridge fall area ---------
+TrainSpawned = false
+TrainEntity = nil
 BridgeDestroyed = false
-RegisterServerEvent('bcc-train:ServerBridgeFallHandler', function(freshJoin)
-  local _source = source
-  if not freshJoin then
-    local itemCount = VORPInv.getItemCount(_source, Config.BacchusBridgeDestroying.dynamiteItem)
-    if itemCount >= Config.BacchusBridgeDestroying.dynamiteItemAmount then
-      if not BridgeDestroyed then
-        VORPInv.subItem(_source, Config.BacchusBridgeDestroying.dynamiteItem, Config.BacchusBridgeDestroying.dynamiteItemAmount)
-        BridgeDestroyed = true
-        VORPcore.NotifyRightTip(_source, _U("runFromExplosion"), 4000)
-        Wait(Config.BacchusBridgeDestroying.explosionTimer)
-        BccUtils.Discord.sendMessage(Config.WebhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U("bacchusDestroyedWebhook"), "")
-        TriggerClientEvent('bcc-train:BridgeFall', -1) --triggers for all cleints
-      end
+
+VORPcore.Callback.Register('bcc-train:JobCheck', function(source, cb, station)
+    local _source = source
+    local Character = VORPcore.getUser(_source).getUsedCharacter
+    local charJob = Character.job
+    local jobGrade = Character.jobGrade
+    if not charJob then
+        cb(false)
+        return
+    end
+    local hasJob = false
+    hasJob = CheckPlayerJob(charJob, jobGrade, station)
+    if hasJob then
+        cb(true)
     else
-      VORPcore.NotifyRightTip(_source, _U("noItem"), 4000)
+        cb(false)
     end
-  else
-    if BridgeDestroyed then
-      TriggerClientEvent('bcc-train:BridgeFall', _source) --triggers for loaded in client
-    end
-  end
 end)
 
-RegisterServerEvent('bcc-train:DeliveryPay', function(pay)
-  local _source = source
-  local Character = VORPcore.getUser(_source).getUsedCharacter
-  Character.addCurrency(0, pay)
+function CheckPlayerJob(charJob, jobGrade, station)
+    for _, job in pairs(Stations[station].shop.jobs) do
+        if (charJob == job.name) and (tonumber(jobGrade) >= tonumber(job.grade)) then
+            return true
+        end
+    end
+end
+
+VORPcore.Callback.Register('bcc-train:CheckTrainSpawn', function(source, cb)
+    if TrainSpawned then
+        cb(false)
+    else
+        cb(true)
+    end
 end)
 
---- Check if properly downloaded
+RegisterServerEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, myTrain)
+    if spawned then
+        TrainSpawned = true
+        TrainEntity = myTrain
+        BccUtils.Discord.sendMessage(Config.webhookLink, 'BCC Train',
+        'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U('trainSpawnedWeb'), _U('trainSpawnedwebMain'))
+    else
+        TrainSpawned = false
+        TrainEntity = nil
+        BccUtils.Discord.sendMessage(Config.webhookLink, 'BCC Train',
+        'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U('trainSpawnedWeb'), _U('trainNotSpawnedWeb'))
+    end
+end)
+
+RegisterServerEvent('bcc-train:RegisterInventory', function(trainId, model)
+    for _, trainCfg in pairs(Trains) do
+        if trainCfg.model == model then
+            local data = {
+                id = 'Train_' .. trainId .. '_bcc-traininv',
+                name = _U('trainInv'),
+                limit = trainCfg.inventory.limit,
+                acceptWeapons = trainCfg.inventory.acceptWeapons,
+                shared = trainCfg.inventory.shared,
+                ignoreItemStackLimit = true,
+                whitelistItems = false,
+                UsePermissions = false,
+                UseBlackList = false,
+                whitelistWeapons = false
+            }
+            exports.vorp_inventory:registerInventory(data)
+            break
+        end
+    end
+end)
+
+RegisterServerEvent('bcc-train:OpenInventory', function(trainId)
+    local _source = source
+    exports.vorp_inventory:openInventory(_source, 'Train_' .. trainId .. '_bcc-traininv')
+end)
+
+VORPcore.Callback.Register('bcc-train:GetMyTrains', function(source, cb)
+    local _source = source
+    local Character = VORPcore.getUser(_source).getUsedCharacter
+    local myTrains = MySQL.query.await('SELECT * FROM train WHERE `charidentifier` = ?', { Character.charIdentifier })
+    if myTrains then
+        cb(myTrains)
+    else
+        cb(nil)
+    end
+end)
+
+RegisterServerEvent('bcc-train:BuyTrain', function(trainCfg)
+    local _source = source
+    local Character = VORPcore.getUser(_source).getUsedCharacter
+    if Character.money >= trainCfg.price then
+        MySQL.query.await('INSERT INTO train (`charidentifier`, `trainModel`, `fuel`, `condition`) VALUES (?, ?, ?, ?)',
+        { Character.charIdentifier, trainCfg.model, trainCfg.fuel.maxAmount, trainCfg.condition.maxAmount })
+
+        Character.removeCurrency(0, trainCfg.price)
+        VORPcore.NotifyRightTip(_source, _U('trainBought'), 4000)
+
+        BccUtils.Discord.sendMessage(Config.webhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg',
+            _U('charIdWeb') .. Character.charIdentifier, _U('boughtTrainWeb') .. trainCfg.model)
+    else
+        VORPcore.NotifyRightTip(_source, _U('notEnoughMoney'), 4000)
+    end
+end)
+
+VORPcore.Callback.Register('bcc-train:SellTrain', function(source, cb, data)
+    local _source = source
+    local Character = VORPcore.getUser(_source).getUsedCharacter
+    local trainModel = data.trainModel
+    MySQL.query.await('DELETE FROM train WHERE charidentifier = ? AND trainid = ?', {Character.charIdentifier, data.trainid})
+
+    for _, trainCfg in pairs(Trains) do
+        if trainCfg.model == trainModel then
+            local sellPrice = math.floor(Config.sellPrice * trainCfg.price)
+            Character.addCurrency(0, sellPrice)
+            VORPcore.NotifyRightTip(_source, _U('soldTrain') .. sellPrice, 4000)
+            break
+        end
+    end
+    cb(true)
+end)
+
+VORPcore.Callback.Register('bcc-train:DecTrainFuel', function(source, cb, trainid, trainFuel, trainCfg)
+    local newFuel = trainFuel - trainCfg.fuel.decreaseAmount
+    MySQL.query.await('UPDATE train SET `fuel` = ? WHERE `trainid` = ?', { newFuel, trainid })
+    cb(newFuel)
+end)
+
+VORPcore.Callback.Register('bcc-train:DecTrainCond', function(source, cb, trainid, trainCondition, trainCfg)
+    local newCondition = trainCondition - trainCfg.condition.decreaseAmount
+    MySQL.query.await('UPDATE train SET `condition` = ? WHERE `trainid` = ?', { newCondition, trainid })
+    cb(newCondition)
+end)
+
+VORPcore.Callback.Register('bcc-train:FuelTrain', function(source, cb, trainId, trainFuel, trainCfg)
+    local _source = source
+    local maxFuel = trainCfg.fuel.maxAmount
+    if trainFuel >= maxFuel then
+        VORPcore.NotifyRightTip(_source, _U('noFuelNeeded'), 4000)
+        cb(nil)
+        return
+    end
+    local itemCount = exports.vorp_inventory:getItemCount(_source, nil, Config.fuel.item)
+    if itemCount >= trainCfg.fuel.itemAmount then
+        exports.vorp_inventory:subItem(_source, Config.fuel.item, trainCfg.fuel.itemAmount)
+        MySQL.query.await('UPDATE train SET `fuel` = ? WHERE `trainid` = ?', { maxFuel, trainId })
+        VORPcore.NotifyRightTip(_source, _U('fuelAdded'), 4000)
+        cb(maxFuel)
+    else
+        VORPcore.NotifyRightTip(_source, _U('noItem'), 4000)
+        cb(nil)
+    end
+end)
+
+VORPcore.Callback.Register('bcc-train:RepairTrain', function(source, cb, trainId, trainCondition, trainCfg)
+    local _source = source
+    local maxCondition = trainCfg.condition.maxAmount
+    if trainCondition >= maxCondition then
+        VORPcore.NotifyRightTip(_source, _U('noRepairsNeeded'), 4000)
+        cb(nil)
+        return
+    end
+    local itemCount = exports.vorp_inventory:getItemCount(_source, nil, Config.condition.item)
+    if itemCount >= trainCfg.condition.itemAmount then
+        exports.vorp_inventory:subItem(_source, Config.condition.item, trainCfg.condition.itemAmount)
+        MySQL.query.await('UPDATE train SET `condition` = ? WHERE `trainid` = ?', { maxCondition, trainId })
+        VORPcore.NotifyRightTip(_source, _U('trainRepaired'), 4000)
+        cb(maxCondition)
+    else
+        VORPcore.NotifyRightTip(_source, _U('noItem'), 4000)
+        cb(nil)
+    end
+end)
+
+RegisterServerEvent('bcc-train:BridgeFallHandler', function(freshJoin)
+    local _source = source
+    if not freshJoin then
+        local itemCount = exports.vorp_inventory:getItemCount(_source, nil, Config.bacchusBridge.item)
+        if itemCount >= Config.bacchusBridge.itemAmount then
+            if not BridgeDestroyed then
+                exports.vorp_inventory:subItem(_source, Config.bacchusBridge.item, Config.bacchusBridge.itemAmount)
+                BridgeDestroyed = true
+                VORPcore.NotifyRightTip(_source, _U('runFromExplosion') .. Config.bacchusBridge.timer .. _U('seconds'), 4000)
+                Wait(Config.bacchusBridge.timer * 1000)
+                BccUtils.Discord.sendMessage(Config.webhookLink, 'BCC Train',
+                'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U('bacchusDestroyedWebhook'), '')
+                TriggerClientEvent('bcc-train:BridgeFall', -1) --triggers for all clients
+            end
+        else
+            VORPcore.NotifyRightTip(_source, _U('noItem'), 4000)
+        end
+    else
+        if BridgeDestroyed then
+            TriggerClientEvent('bcc-train:BridgeFall', _source) --triggers for new client
+        end
+    end
+end)
+
+RegisterServerEvent('bcc-train:DeliveryPay', function(destination)
+    local _source = source
+    local Character = VORPcore.getUser(_source).getUsedCharacter
+    Character.addCurrency(0, destination.pay)
+end)
+
+local CooldownData = {}
+RegisterServerEvent('bcc-train:SetPlayerCooldown', function(mission)
+    local src = source
+    local Character = VORPcore.getUser(src).getUsedCharacter
+    CooldownData[mission .. tostring(Character.charIdentifier)] = os.time()
+end)
+
+VORPcore.Callback.Register('bcc-train:CheckPlayerCooldown', function(source, cb, mission)
+    local src = source
+    local Character = VORPcore.getUser(src).getUsedCharacter
+    local cooldown = Config.cooldown[mission]
+    local onList = false
+    local missionId = mission .. tostring(Character.charIdentifier)
+    for id, time in pairs(CooldownData) do
+        if id == missionId then
+            onList = true
+            if os.difftime(os.time(), time) >= cooldown * 60 then
+                cb(false) -- Not on Cooldown
+                break
+            else
+                cb(true)
+                break
+            end
+        end
+    end
+    if not onList then
+        cb(false)
+    end
+end)
+
+-- Check if properly downloaded
 function file_exists(name)
   local f = LoadResourceFile(GetCurrentResourceName(), name)
   return f ~= nil
 end
 
 if not file_exists('./ui/index.html') then
-  print("^1 INCORRECT DOWNLOAD!  ^0")
+  print('^1 INCORRECT DOWNLOAD!  ^0')
   print(
     '^4 Please Download: ^2(bcc-train.zip) ^4from ^3<https://github.com/BryceCanyonCounty/bcc-train/releases/latest>^0')
 end
+
 BccUtils.Versioner.checkRelease(GetCurrentResourceName(), 'https://github.com/BryceCanyonCounty/bcc-train')

@@ -23,7 +23,7 @@ jobs:
         working-directory: ./ui
       - uses: vimtor/action-zip@v1
         with:
-          files: fxmanifest.lua README.md locale.lua ui/dist client server languages imgs LICENSE.md train.sql config.lua
+          files: fxmanifest.lua README.md locale.lua ui/dist client server languages imgs LICENSE.md train.sql configs
           recursive: false
           dest: bcc-train.zip
       - name: get-npm-version

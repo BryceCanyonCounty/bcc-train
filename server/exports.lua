@@ -10,7 +10,7 @@ end)
 -- Get Train Entity
 exports('GetTrainEntity', function()
     if TrainSpawned then
-        if TrainEntity ~= nil then
+        if TrainEntity then
             return TrainEntity
         end
     else

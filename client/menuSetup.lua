@@ -377,7 +377,6 @@ function DrivingMenu(trainCfg, myTrainData)
             ['stopEngine'] = function()
                 VORPcore.NotifyRightTip(_U('engineStopped'), 4000)
                 EngineStarted = false
-                --VORPMenu.CloseAll()
                 DrivingMenu(trainCfg, myTrainData)
                 Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
             end,
@@ -385,7 +384,6 @@ function DrivingMenu(trainCfg, myTrainData)
                 if TrainFuel >= 1 and TrainCondition >=1 then
                     VORPcore.NotifyRightTip(_U('engineStarted'), 4000)
                     EngineStarted = true
-                    --VORPMenu.CloseAll()
                     DrivingMenu(trainCfg, myTrainData)
                     MaxSpeedCalc(speed)
                 else

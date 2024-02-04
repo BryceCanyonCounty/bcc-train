@@ -262,6 +262,8 @@ AddEventHandler('bcc-train:FuelDecreaseHandler', function(trainCfg, myTrainData)
             if fuel then
                 FuelUpdate(fuel)
             end
+        else
+            Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
         end
         if TrainFuel <= 0 and not fuelEmpty then
             fuelEmpty = true
@@ -286,6 +288,8 @@ AddEventHandler('bcc-train:CondDecreaseHandler', function(trainCfg, myTrainData)
             if cond then
                 ConditionUpdate(cond)
             end
+        else
+            Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
         end
         if TrainCondition <= 0 and not conditionEmpty then
             conditionEmpty = true

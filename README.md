@@ -27,6 +27,8 @@ This is the best, full fledged train script for RedM! A multitude of features li
 ## Dependencies
 - [vorp_core](https://github.com/VORPCORE/vorp-core-lua)
 - [vorp_inventory](https://github.com/VORPCORE/vorp_inventory-lua)
+- [bcc-minigames](https://github.com/BryceCanyonCounty/bcc-minigames)
+- [bcc-utils](https://github.com/BryceCanyonCounty/bcc-utils)
 
 ## Installation
 - Download the latest release `bcc-train.zip` at [/releases/latest](https://github.com/BryceCanyonCounty/bcc-train/releases/latest)

@@ -9,6 +9,7 @@ Config.keys = {
     repair    = 0x73A8FD83, -- Default: 0x73A8FD83 [H]
     bridge    = 0x760A9C6F, -- Default: 0x760A9C6F [G]
     delivery  = 0x760A9C6F, -- Default: 0x760A9C6F [G]
+    inventory = 0xD8F73058, -- Default: 0xD8F73058 [U]
 }
 -----------------------------------------------------
 

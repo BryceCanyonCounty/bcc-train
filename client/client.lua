@@ -218,17 +218,21 @@ function SpawnTrain(trainCfg, myTrainData, dirChange, station) --credit to rsg_t
         TriggerEvent('bcc-train:TargetMenu', trainCfg)
     end
     TriggerEvent('bcc-train:TrainHandler', trainCfg, myTrainData)
+    TriggerEvent('bcc-train:TrainActions')
 end
 
 AddEventHandler('bcc-train:TrainHandler', function(trainCfg, myTrainData)
     DrivingMenuOpened = false
     while MyTrain do
-        local playerPed = PlayerPedId()
         local sleep = 1000
+        local playerPed = PlayerPedId()
+        local isDead = IsEntityDead(playerPed)
         local distance = #(GetEntityCoords(playerPed) - GetEntityCoords(MyTrain))
-        if distance >= Config.despawnDist then
+        if distance >= Config.despawnDist or isDead then
             if MyTrain then
-                VORPcore.NotifyRightTip(_U('tooFarFromTrain'), 4000)
+                if not isDead then
+                    VORPcore.NotifyRightTip(_U('tooFarFromTrain'), 4000)
+                end
                 TriggerEvent('bcc-train:ResetTrain')
                 break
             end
@@ -245,6 +249,8 @@ AddEventHandler('bcc-train:TrainHandler', function(trainCfg, myTrainData)
                     DrivingMenuOpened = false
                     VORPMenu.CloseAll()
                     HideHUD()
+                    ForwardActive = false
+                    BackwardActive = false
                 end
             end
         end
@@ -300,6 +306,25 @@ AddEventHandler('bcc-train:CondDecreaseHandler', function(trainCfg, myTrainData)
             end
         elseif conditionEmpty and TrainCondition >= 1 then
             conditionEmpty = false
+        end
+    end
+end)
+
+-- Open Train Inventory
+AddEventHandler('bcc-train:TrainActions', function()
+    local invKey = Config.keys.inventory
+    while MyTrain do
+        local playerPed = PlayerPedId()
+        Wait(0)
+        if Citizen.InvokeNative(0x580417101DDB492F, 0, invKey) then -- IsControlJustPressed
+            if not Citizen.InvokeNative(0x6F972C1AB75A1ED0, playerPed) then -- IsPedInAnyTrain
+                goto continue
+            end
+            local dist = #(GetEntityCoords(playerPed) - GetEntityCoords(MyTrain))
+            if dist <= 10 then
+                TriggerServerEvent('bcc-train:OpenInventory', TrainId)
+            end
+            ::continue::
         end
     end
 end)

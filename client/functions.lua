@@ -25,6 +25,8 @@ FuelTarget = nil
 RepairTarget = nil
 InMission = false
 EngineStarted = false
+ForwardActive = false
+BackwardActive = false
 
 function AddBlip(station)
     local stationCfg = Stations[station]
@@ -133,8 +135,11 @@ AddEventHandler('bcc-train:ResetTrain', function()
     end
     VORPMenu.CloseAll()
     TargetPromptsStarted = false
+    EngineStarted = false
     FuelTarget = nil
     RepairTarget = nil
+    ForwardActive = false
+    BackwardActive = false
     if DestinationBlip then
         RemoveBlip(DestinationBlip)
         DestinationBlip = nil
@@ -153,34 +158,30 @@ AddEventHandler('bcc-train:TargetMenu', function(trainCfg)
     while MyTrain do
         local sleep = 1000
         local dist = #(GetEntityCoords(playerPed) - GetEntityCoords(MyTrain))
-        if dist <= 6 then
-            Citizen.InvokeNative(0x05254BA0B44ADC16, MyTrain, true) -- SetVehicleCanBeTargetted
-            if Citizen.InvokeNative(0x6F972C1AB75A1ED0, playerPed) then -- IsPedOnAnyTrain
-                local _, targetEntity = GetPlayerTargetEntity(player)
-                if Citizen.InvokeNative(0x27F89FDC16688A7A, player, MyTrain, 0) then -- IsPlayerTargettingEntity
-                    sleep = 0
-                    local trainGroup = Citizen.InvokeNative(0xB796970BD125FCE8, targetEntity) -- PromptGetGroupIdForTargetEntity
-                    TriggerEvent('bcc-train:TargetPrompts', trainGroup, trainCfg)
-
-                    if Citizen.InvokeNative(0x580417101DDB492F, 0, Config.keys.fuel) then -- IsControlJustPressed
-                        local fuel = VORPcore.Callback.TriggerAwait('bcc-train:FuelTrain',TrainId, TrainFuel, trainCfg )
-                        if fuel then
-                            FuelUpdate(fuel)
-                        end
-
-                    elseif Citizen.InvokeNative(0x580417101DDB492F, 0, Config.keys.repair) then -- IsControlJustPressed
-                        local cond = VORPcore.Callback.TriggerAwait('bcc-train:RepairTrain', TrainId, TrainCondition, trainCfg)
-                        if cond then
-                            ConditionUpdate(cond)
-                        end
-                    end
-                end
-            else
-                Citizen.InvokeNative(0x05254BA0B44ADC16, MyTrain, false) -- SetVehicleCanBeTargetted
-            end
-        else
+        if dist >= 6 or not Citizen.InvokeNative(0xEC5F66E459AF3BB2, playerPed, MyTrain) then -- IsPedOnSpecificVehicle
             Citizen.InvokeNative(0x05254BA0B44ADC16, MyTrain, false) -- SetVehicleCanBeTargetted
+            goto continue
         end
+        Citizen.InvokeNative(0x05254BA0B44ADC16, MyTrain, true) -- SetVehicleCanBeTargetted
+        if Citizen.InvokeNative(0x27F89FDC16688A7A, player, MyTrain, 0) then -- IsPlayerTargettingEntity
+            sleep = 0
+            local trainGroup = Citizen.InvokeNative(0xB796970BD125FCE8, MyTrain) -- PromptGetGroupIdForTargetEntity
+            TriggerEvent('bcc-train:TargetPrompts', trainGroup, trainCfg)
+
+            if Citizen.InvokeNative(0x580417101DDB492F, 0, Config.keys.fuel) then -- IsControlJustPressed
+                local fuel = VORPcore.Callback.TriggerAwait('bcc-train:FuelTrain', TrainId, TrainFuel, trainCfg)
+                if fuel then
+                    FuelUpdate(fuel)
+                end
+
+            elseif Citizen.InvokeNative(0x580417101DDB492F, 0, Config.keys.repair) then -- IsControlJustPressed
+                local cond = VORPcore.Callback.TriggerAwait('bcc-train:RepairTrain', TrainId, TrainCondition, trainCfg)
+                if cond then
+                    ConditionUpdate(cond)
+                end
+            end
+        end
+        ::continue::
         Wait(sleep)
     end
 end)

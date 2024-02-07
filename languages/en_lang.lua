@@ -1,6 +1,6 @@
 ---------------------------------- ENGLISH -------------------------------------------
 Locales['en_lang'] = {
-    openMainMenu = 'Open Menu',
+    openMainMenu = 'Menu',
     to = ':00~q~ to ~o~',
     hundred = ':00',
     hours = ' is open from ~o~',
@@ -11,12 +11,12 @@ Locales['en_lang'] = {
     tooFarFromTrain = 'You got too far from your train! Train despawned!',
     speed = 'Speed',
     forward = 'Cruise Forward',
-    forwardEnabled = 'Forward enabled!',
-    forwardDisbaled = 'Forward Disabled!',
+    forwardEnabled = 'Forward: ~o~Enabled',
+    forwardDisbaled = 'Forward: ~o~Disabled',
     backward = 'Cruise backwards',
-    backwardEnabled = 'Backward Enabled',
-    backwardDisabled = 'Backward Disabled',
-    backwardsIsOn = 'Failed! Backwards is currently enabled!',
+    backwardEnabled = 'Reverse: ~o~Enabled',
+    backwardDisabled = 'Reverse: ~o~Disabled',
+    backwardsIsOn = 'Failed! Reverse is currently enabled!',
     forwardsIsOn = 'Failed! Forwards is currently enabled!',
     drivingMenu = 'Conductor Menu',
     switchTrack = 'Switch Tracks',
@@ -81,5 +81,6 @@ Locales['en_lang'] = {
     trainLimit = 'You can have a maximum of ~o~',
     trains = '~q~ trains!',
     soldTrain = 'You sold a train for $',
-    maxSpeed = 'Max Speed: '
+    maxSpeed = 'Max Speed: ',
+    engineMustBeStarted = 'Engine must be started!'
 }

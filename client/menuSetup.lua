@@ -257,8 +257,6 @@ end
 function DrivingMenu(trainCfg, myTrainData)
     VORPMenu.CloseAll()
     local speed = 0
-    local forwardActive = false
-    local backwardActive = false
     local elements = {
         {
             label = _U('speed'),
@@ -267,7 +265,7 @@ function DrivingMenu(trainCfg, myTrainData)
             type = 'slider',
             min = 0,
             max = trainCfg.maxSpeed,
-            hop = 1.0
+            hop = 1
         },
         { label = _U('switchTrack'),  value = 'switchtrack', desc = '' },
     }
@@ -279,9 +277,6 @@ function DrivingMenu(trainCfg, myTrainData)
         table.insert(elements, { label = _U('stopEngine'),   value = 'stopEngine',  desc = '' })
     else
         table.insert(elements, { label = _U('startEngine'),  value = 'startEngine', desc = '' })
-    end
-    if trainCfg.inventory.enabled then
-        table.insert(elements, { label = _U('openInv'), value = 'openInv', desc = '' })
     end
 
     table.insert(elements, { label = _U('deleteTrain'), value = 'deleteTrain', desc = '' }) --done here to ensure this is at the bottom of menu
@@ -300,63 +295,72 @@ function DrivingMenu(trainCfg, myTrainData)
         end
         local selectedOption = {
             ['forward'] = function()
-                if EngineStarted then
-                    if not backwardActive then
-                        if not forwardActive then
-                            if TrainFuel >= 1 then
-                                forwardActive = true
-                                VORPcore.NotifyRightTip(_U('forwardEnabled'), 4000)
-                                while forwardActive do
-                                    Wait(100)
-                                    local distance = #(GetEntityCoords(MyTrain) - vector3(517.56, 1757.27, 188.34)) -- Bacchus Bridge
-                                    if distance <= 1000 then
-                                        VORPcore.NotifyRightTip(_U('cruiseDisabledInRegion'), 4000)
-                                        forwardActive = false
-                                        break
-                                    end
-                                    if speed ~= 0 and speed ~= nil then --stops error
-                                        SetTrainSpeed(MyTrain, speed + .1)
-                                    end
-                                end
-                            else
-                                VORPcore.NotifyRightTip(_U('noCruiseNoFuel'), 4000)
-                            end
-                        else
-                            VORPcore.NotifyRightTip(_U('forwardDisbaled'), 4000)
-                            forwardActive = false
-                        end
-                    else
-                        VORPcore.NotifyRightTip(_U('backwardsIsOn'), 4000)
+                if not EngineStarted then
+                    VORPcore.NotifyRightTip(_U('engineMustBeStarted'), 4000)
+                    ForwardActive = false
+                    return
+                end
+                if BackwardActive then
+                    VORPcore.NotifyRightTip(_U('backwardsIsOn'), 4000)
+                    return
+                end
+                if ForwardActive then
+                    VORPcore.NotifyRightTip(_U('forwardDisbaled'), 4000)
+                    ForwardActive = false
+                    return
+                end
+                if TrainFuel <= 0 then
+                    VORPcore.NotifyRightTip(_U('noCruiseNoFuel'), 4000)
+                    ForwardActive = false
+                    return
+                end
+                ForwardActive = true
+                VORPcore.NotifyRightTip(_U('forwardEnabled'), 4000)
+                while ForwardActive do
+                    Wait(100)
+                    local distance = #(GetEntityCoords(MyTrain) - vector3(517.56, 1757.27, 188.34)) -- Bacchus Bridge
+                    if distance <= 1000 then
+                        VORPcore.NotifyRightTip(_U('cruiseDisabledInRegion'), 4000)
+                        ForwardActive = false
+                        break
+                    end
+                    if speed >= 1 then
+                        Citizen.InvokeNative(0xDFBA6BBFF7CCAFBB, MyTrain, speed + 0.1) -- SetTrainSpeed
                     end
                 end
             end,
             ['backward'] = function()
-                if EngineStarted then
-                    if not forwardActive then
-                        if not backwardActive then
-                            if TrainFuel >=1 then
-                                backwardActive = true
-                                VORPcore.NotifyRightTip(_U('backwardEnabled'), 4000)
-                                while backwardActive do
-                                    Wait(100)
-                                    local distance = #(GetEntityCoords(MyTrain) - vector3(517.56, 1757.27, 188.34)) -- Bacchus Bridge
-                                    if distance <= 1000 then
-                                        VORPcore.NotifyRightTip(_U('cruiseDisabledInRegion'), 4000)
-                                        backwardActive = false break
-                                    end
-                                    if speed ~= 0 and speed ~= nil then --stops error
-                                        SetTrainSpeed(MyTrain, speed + .1 - speed * 2)
-                                    end
-                                end
-                            else
-                                VORPcore.NotifyRightTip(_U('noCruiseNoFuel'), 4000)
-                            end
-                        else
-                            VORPcore.NotifyRightTip(_U('backwardDisabled'), 4000)
-                            backwardActive = false
-                        end
-                    else
-                        VORPcore.NotifyRightTip(_U('forwardsIsOn'), 4000)
+                if not EngineStarted then
+                    VORPcore.NotifyRightTip(_U('engineMustBeStarted'), 4000)
+                    BackwardActive = false
+                    return
+                end
+                if ForwardActive then
+                    VORPcore.NotifyRightTip(_U('forwardsIsOn'), 4000)
+                    return
+                end
+                if BackwardActive then
+                    VORPcore.NotifyRightTip(_U('backwardDisabled'), 4000)
+                    BackwardActive = false
+                    return
+                end
+                if TrainFuel <= 0 then
+                    VORPcore.NotifyRightTip(_U('noCruiseNoFuel'), 4000)
+                    BackwardActive = false
+                    return
+                end
+                BackwardActive = true
+                VORPcore.NotifyRightTip(_U('backwardEnabled'), 4000)
+                while BackwardActive do
+                    Wait(100)
+                    local distance = #(GetEntityCoords(MyTrain) - vector3(517.56, 1757.27, 188.34)) -- Bacchus Bridge
+                    if distance <= 1000 then
+                        VORPcore.NotifyRightTip(_U('cruiseDisabledInRegion'), 4000)
+                        BackwardActive = false
+                        break
+                    end
+                    if speed >= 1 then
+                        Citizen.InvokeNative(0xDFBA6BBFF7CCAFBB, MyTrain, (speed + 0.1) - ((speed + 0.1) * 2)) -- SetTrainSpeed
                     end
                 end
             end,
@@ -370,9 +374,6 @@ function DrivingMenu(trainCfg, myTrainData)
                     switched = false
                     VORPcore.NotifyRightTip(_U('switchingOn'), 4000)
                 end
-            end,
-            ['openInv'] = function()
-                TriggerServerEvent('bcc-train:OpenInventory', myTrainData.trainid)
             end,
             ['stopEngine'] = function()
                 VORPcore.NotifyRightTip(_U('engineStopped'), 4000)
@@ -405,9 +406,9 @@ function DrivingMenu(trainCfg, myTrainData)
 end
 
 function MaxSpeedCalc(speed)
-    local setMaxSpeed = speed + .1
-    if setMaxSpeed > 30.0 then
+    local setMaxSpeed = speed + 0.1
+    if setMaxSpeed >= 30.0 then
         setMaxSpeed = 29.9
     end
-    Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, setMaxSpeed)
+    Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, setMaxSpeed) -- SetTrainMaxSpeed
 end

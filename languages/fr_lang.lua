@@ -1,6 +1,6 @@
 ---------------------------------- French -------------------------------------------
 Locales['fr_lang'] = {
-    openMainMenu = 'Open Menu',
+    openMainMenu = 'Menu',
     to = ':00~q~ to ~o~',
     hundred = ':00',
     hours = ' is open from ~o~',
@@ -11,11 +11,11 @@ Locales['fr_lang'] = {
     tooFarFromTrain = 'Vous vous êtes trop éloigné de votre train ! Le train a disparu !',
     speed = 'Vitesse',
     forward = 'Marche avant',
-    forwardEnabled = 'Marche avant activé !',
-    forwardDisbaled = 'Marche avant désactivé !',
+    forwardEnabled = 'Marche avant: ~o~activé',
+    forwardDisbaled = 'Marche avant: ~o~désactivé',
     backward = 'Marche arrière',
-    backwardEnabled = 'Marche arrière activé',
-    backwardDisabled = 'Marche arrière désactivé',
+    backwardEnabled = 'Marche arrière: ~o~activé',
+    backwardDisabled = 'Marche arrière: ~o~désactivé',
     backwardsIsOn = 'Échec ! La marche arrière est actuellement activée !',
     forwardsIsOn = 'Échec ! La marche avant est actuellement activée !',
     drivingMenu = 'Menu du conducteur',
@@ -81,5 +81,6 @@ Locales['fr_lang'] = {
     trainLimit = 'You can have a maximum of ~o~',
     trains = '~q~ trains!',
     soldTrain = 'You sold a train for $',
-    maxSpeed = 'Max Speed: '
+    maxSpeed = 'Max Speed: ',
+    engineMustBeStarted = 'Engine must be started!'
 }

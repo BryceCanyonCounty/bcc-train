@@ -41,6 +41,7 @@ This is the best, full fledged train script for RedM! A multitude of features li
 
 ## How to use
 - To refuel/repair train hold right click while near the driver seat to show prompts
+- Press `U` to access train inventory
 - Buy a train from a station, spawn it and have fun!
 
 ## Api

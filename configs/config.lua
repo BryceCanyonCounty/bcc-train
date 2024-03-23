@@ -14,6 +14,8 @@ Config.keys = {
 -----------------------------------------------------
 
 Config.webhookLink = '' -- Insert Webhook Link to Enable
+Config.webhookTitle = 'BCC-Train' -- Insert Webhook Title
+Config.webhookAvatar = '' -- Insert Webhook Avatar
 -----------------------------------------------------
 
 Config.maxTrains = 5 -- Max Number of Trains a Player may Own

@@ -1,6 +1,8 @@
 VORPcore = exports.vorp_core:GetCore()
 BccUtils = exports['bcc-utils'].initiate()
 
+local discord = BccUtils.Discord.setup(Config.webhookLink, Config.webhookTitle, Config.WebhookAvatar)
+
 TrainSpawned = false
 TrainEntity = nil
 BridgeDestroyed = false
@@ -40,16 +42,33 @@ VORPcore.Callback.Register('bcc-train:CheckTrainSpawn', function(source, cb)
 end)
 
 RegisterServerEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, myTrain)
+    local _source = source
+    local Character = VORPcore.getUser(_source).getUsedCharacter
     if spawned then
         TrainSpawned = true
         TrainEntity = myTrain
-        BccUtils.Discord.sendMessage(Config.webhookLink, 'BCC Train',
-        'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U('trainSpawnedWeb'), _U('trainSpawnedwebMain'))
+        discord:sendMessage(
+            _U('trainSpawnedwebMain') ..
+            _U('charNameWeb') ..
+            Character.firstname ..
+            " " ..
+            Character.lastname ..
+            _U('charIdentWeb') ..
+            Character.identifier ..
+            _U('charIdWeb') ..
+            Character.charIdentifier)
     else
         TrainSpawned = false
         TrainEntity = nil
-        BccUtils.Discord.sendMessage(Config.webhookLink, 'BCC Train',
-        'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U('trainSpawnedWeb'), _U('trainNotSpawnedWeb'))
+        discord:sendMessage(
+            _U('trainNotSpawnedWeb') ..
+            _U('charNameWeb') ..
+            Character.firstname .. " " ..
+            Character.lastname ..
+            _U('charIdentWeb') ..
+            Character.identifier ..
+            _U('charIdWeb') ..
+            Character.charIdentifier)
     end
 end)
 
@@ -99,9 +118,19 @@ RegisterServerEvent('bcc-train:BuyTrain', function(trainCfg)
 
         Character.removeCurrency(0, trainCfg.price)
         VORPcore.NotifyRightTip(_source, _U('trainBought'), 4000)
-
-        BccUtils.Discord.sendMessage(Config.webhookLink, 'BCC Train', 'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg',
-            _U('charIdWeb') .. Character.charIdentifier, _U('boughtTrainWeb') .. trainCfg.model)
+        discord:sendMessage(
+            _U('charNameWeb') ..
+            Character.firstname ..
+            " " ..
+            Character.lastname ..
+            _U('charIdentWeb') ..
+            Character.identifier ..
+            _U('charIdWeb') ..
+            Character.charIdentifier ..
+            _U('boughtTrainWeb') ..
+            trainCfg.model ..
+            _U('charPriceWeb') ..
+            trainCfg.price)
     else
         VORPcore.NotifyRightTip(_source, _U('notEnoughMoney'), 4000)
     end
@@ -118,6 +147,19 @@ VORPcore.Callback.Register('bcc-train:SellTrain', function(source, cb, data)
             local sellPrice = math.floor(Config.sellPrice * trainCfg.price)
             Character.addCurrency(0, sellPrice)
             VORPcore.NotifyRightTip(_source, _U('soldTrain') .. sellPrice, 4000)
+            discord:sendMessage(
+                _U('charNameWeb') ..
+                Character.firstname ..
+                " " ..
+                Character.lastname ..
+                _U('charIdentWeb') ..
+                Character.identifier ..
+                _U('charIdWeb') ..
+                Character.charIdentifier ..
+                _U('soldTrainWeb') ..
+                trainCfg.model ..
+                _U('charPriceWeb') ..
+                sellPrice)
             break
         end
     end
@@ -178,6 +220,7 @@ end)
 
 RegisterServerEvent('bcc-train:BridgeFallHandler', function(freshJoin)
     local _source = source
+    local Character = VORPcore.getUser(_source).getUsedCharacter
     if not freshJoin then
         local itemCount = exports.vorp_inventory:getItemCount(_source, nil, Config.bacchusBridge.item)
         if itemCount >= Config.bacchusBridge.itemAmount then
@@ -186,8 +229,18 @@ RegisterServerEvent('bcc-train:BridgeFallHandler', function(freshJoin)
                 BridgeDestroyed = true
                 VORPcore.NotifyRightTip(_source, _U('runFromExplosion') .. Config.bacchusBridge.timer .. _U('seconds'), 4000)
                 Wait(Config.bacchusBridge.timer * 1000)
-                BccUtils.Discord.sendMessage(Config.webhookLink, 'BCC Train',
-                'https://gamespot.com/a/uploads/original/1179/11799911/3383938-duck.jpg', _U('bacchusDestroyedWebhook'), '')
+                discord:sendMessage(
+                    _U('charNameWeb') ..
+                    Character.firstname ..
+                    " " ..
+                    Character.lastname ..
+                    _U('charIdentWeb') ..
+                    Character.identifier ..
+                    _U('charIdWeb') ..
+                    Character.charIdentifier ..
+                    _U('bacchusDestroyedWebhook')
+                )
+                BccUtils.Discord.sendMessage(Config.webhookLink, Config.webhookTitle, Config.webhookAvatar, _U('bacchusDestroyedWebhook'), '')
                 TriggerClientEvent('bcc-train:BridgeFall', -1) --triggers for all clients
             end
         else
@@ -204,6 +257,17 @@ RegisterServerEvent('bcc-train:DeliveryPay', function(destination)
     local _source = source
     local Character = VORPcore.getUser(_source).getUsedCharacter
     Character.addCurrency(0, destination.pay)
+    discord:sendMessage(
+        _U('charNameWeb') ..
+        Character.firstname ..
+        " " ..
+        Character.lastname ..
+        _U('charIdentWeb') ..
+        Character.identifier ..
+        _U('charIdWeb') ..
+        Character.charIdentifier ..
+        _U('paidDeliveryWeb') ..
+        destination.pay)
 end)
 
 local CooldownData = {}

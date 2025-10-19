@@ -1,3 +1,162 @@
+local Core = exports.vorp_core:GetCore()
+local Menu = exports.vorp_menu:GetMenuData()
+local MiniGame = exports['bcc-minigames'].initiate()
+---@type BCCTrainDebugLib
+local DBG = BCCTrainDebug
+
+local IsShopClosed = false
+local DrivingMenuOpened = false
+-- Prompts
+local MenuPrompt = 0
+local MenuGroup = GetRandomIntInRange(0, 0xffffff)
+local BridgePrompt = 0
+local BridgeGroup = GetRandomIntInRange(0, 0xffffff)
+local MainPromptsStarted = false
+
+local function StartMainPrompts()
+    if MainPromptsStarted then
+        DBG.Success('Main Prompts already started')
+        return
+    end
+
+    if not MenuGroup then
+        DBG.Error('MenuGroup not initialized')
+        return
+    end
+
+    if not Config or not Config.keys or not Config.keys.station or not Config.keys.bridge then
+        DBG.Error('Prompt keys are not configured properly')
+        return
+    end
+
+    MenuPrompt = UiPromptRegisterBegin()
+    if not MenuPrompt or MenuPrompt == 0 then
+        DBG.Error('Failed to register MenuPrompt')
+        return
+    end
+    UiPromptSetControlAction(MenuPrompt, Config.keys.station)
+    UiPromptSetText(MenuPrompt, CreateVarString(10, 'LITERAL_STRING', _U('openMainMenu')))
+    UiPromptSetVisible(MenuPrompt, true)
+    UiPromptSetStandardMode(MenuPrompt, true)
+    UiPromptSetGroup(MenuPrompt, MenuGroup, 0)
+    UiPromptRegisterEnd(MenuPrompt)
+
+    BridgePrompt = UiPromptRegisterBegin()
+    if not BridgePrompt or BridgePrompt == 0 then
+        DBG.Error('Failed to register BridgePrompt')
+        return
+    end
+    UiPromptSetControlAction(BridgePrompt, Config.keys.bridge)
+    UiPromptSetText(BridgePrompt, CreateVarString(10, 'LITERAL_STRING', _U('blowUpBridge')))
+    UiPromptSetEnabled(BridgePrompt, true)
+    UiPromptSetVisible(BridgePrompt, true)
+    Citizen.InvokeNative(0x74C7D7B72ED0D3CF, BridgePrompt, 'MEDIUM_TIMED_EVENT') -- PromptSetStandardizedHoldMode
+    UiPromptSetGroup(BridgePrompt, BridgeGroup, 0)
+    UiPromptRegisterEnd(BridgePrompt)
+
+    MainPromptsStarted = true
+    DBG.Success('Main Prompts started successfully')
+end
+
+local function isShopClosed(stationCfg)
+    local hour = GetClockHours()
+    local hoursActive = stationCfg.shop.hours.active
+
+    if not hoursActive then
+        return false
+    end
+
+    local openHour = stationCfg.shop.hours.open
+    local closeHour = stationCfg.shop.hours.close
+
+    if openHour < closeHour then
+        -- Normal: shop opens and closes on the same day
+        return hour < openHour or hour >= closeHour
+    else
+        -- Overnight: shop closes on the next day
+        return hour < openHour and hour >= closeHour
+    end
+end
+
+local function ManageBlip(station, closed)
+    local stationCfg = Stations[station]
+
+    if (closed and not stationCfg.blip.show.closed) or (not stationCfg.blip.show.open) then
+        if stationCfg.Blip then
+            RemoveBlip(stationCfg.Blip)
+            stationCfg.Blip = nil
+        end
+        return
+    end
+
+    if not stationCfg.Blip then
+        stationCfg.Blip = Citizen.InvokeNative(0x554d9d53f696d002, 1664425300, stationCfg.npc.coords) -- BlipAddForCoords
+        SetBlipSprite(stationCfg.Blip, stationCfg.blip.sprite, true)
+        Citizen.InvokeNative(0x9CB1A1623062F402, stationCfg.Blip, stationCfg.blip.name)               -- SetBlipName
+    end
+
+    local color = stationCfg.blip.color.open
+    if stationCfg.shop.jobsEnabled then color = stationCfg.blip.color.job end
+    if closed then color = stationCfg.blip.color.closed end
+
+    if Config.BlipColors[color] then
+        Citizen.InvokeNative(0x662D364ABF16DE2F, stationCfg.Blip, joaat(Config.BlipColors[color])) -- BlipAddModifier
+    else
+        print('Error: Blip color not defined for color: ' .. tostring(color))
+    end
+end
+
+local function LoadModel(model, modelName)
+    if not IsModelValid(model) then
+        return print('Invalid model:', modelName)
+    end
+
+    if not HasModelLoaded(model) then
+        RequestModel(model, false)
+
+        local timeout = 10000
+        local startTime = GetGameTimer()
+
+        while not HasModelLoaded(model) do
+            if GetGameTimer() - startTime > timeout then
+                print('Failed to load model:', modelName)
+                return
+            end
+            Wait(10)
+        end
+    end
+end
+
+local function AddNPC(station)
+    local stationCfg = Stations[station]
+    local coords = stationCfg.npc.coords
+
+    if not stationCfg.NPC then
+        local modelName = stationCfg.npc.model
+        local model = joaat(modelName)
+        LoadModel(model, modelName)
+
+        stationCfg.NPC = CreatePed(model, coords.x, coords.y, coords.z - 1, stationCfg.npc.heading, false, false, false,
+            false)
+        Citizen.InvokeNative(0x283978A15512B2FE, stationCfg.NPC, true) -- SetRandomOutfitVariation
+
+        SetEntityCanBeDamaged(stationCfg.NPC, false)
+        SetEntityInvincible(stationCfg.NPC, true)
+        Wait(500)
+        FreezeEntityPosition(stationCfg.NPC, true)
+        SetBlockingOfNonTemporaryEvents(stationCfg.NPC, true)
+    end
+end
+
+local function RemoveNPC(station)
+    local stationCfg = Stations[station]
+
+    if stationCfg.NPC then
+        DeleteEntity(stationCfg.NPC)
+        stationCfg.NPC = nil
+    end
+end
+
 -- Start Train
 CreateThread(function()
     StartMainPrompts()
@@ -5,208 +164,157 @@ CreateThread(function()
     TriggerServerEvent('bcc-train:BridgeFallHandler', true)
     while true do
         local playerPed = PlayerPedId()
-        local pCoords = GetEntityCoords(playerPed)
-        local hour = GetClockHours()
+        local playerCoords = GetEntityCoords(playerPed)
         local sleep = 1000
 
-        if IsEntityDead(playerPed) then
-            goto continue
+        if InMenu or IsEntityDead(playerPed) then
+            goto END
         end
+
         for station, stationCfg in pairs(Stations) do
-            if stationCfg.shop.hours.active then
-                -- Using Shop Hours - Shop Closed
-                if hour >= stationCfg.shop.hours.close or hour < stationCfg.shop.hours.open then
-                    if stationCfg.blip.show and stationCfg.blip.showClosed then
-                        if not Stations[station].Blip then
-                            AddBlip(station)
-                        end
-                        Citizen.InvokeNative(0x662D364ABF16DE2F, Stations[station].Blip, joaat(Config.blipColors[stationCfg.blip.color.closed])) -- BlipAddModifier
-                    else
-                        if Stations[station].Blip then
-                            RemoveBlip(Stations[station].Blip)
-                            Stations[station].Blip = nil
-                        end
-                    end
-                    if stationCfg.NPC then
-                        DeleteEntity(stationCfg.NPC)
-                        stationCfg.NPC = nil
-                    end
-                    local distance = #(pCoords - stationCfg.npc.coords)
-                    if distance <= stationCfg.shop.distance then
-                        sleep = 0
-                        local shopClosed = CreateVarString(10, 'LITERAL_STRING',
-                            stationCfg.shop.name .. _U('hours') .. stationCfg.shop.hours.open .. _U('to') .. stationCfg.shop.hours.close .. _U('hundred'))
-                        PromptSetActiveGroupThisFrame(MenuGroup, shopClosed)
-                        PromptSetEnabled(MenuPrompt, false)
-                    end
-                elseif hour >= stationCfg.shop.hours.open then
-                    -- Using Shop Hours - Shop Open
-                    if stationCfg.blip.show then
-                        if not Stations[station].Blip then
-                            AddBlip(station)
-                        end
-                        Citizen.InvokeNative(0x662D364ABF16DE2F, Stations[station].Blip, joaat(Config.blipColors[stationCfg.blip.color.open])) -- BlipAddModifier
-                    end
-                    if not stationCfg.shop.jobsEnabled then
-                        local distance = #(pCoords - stationCfg.npc.coords)
-                        if stationCfg.npc.active then
-                            if distance <= stationCfg.npc.distance then
-                                if not stationCfg.NPC then
-                                    AddNPC(station)
-                                end
-                            else
-                                if stationCfg.NPC then
-                                    DeleteEntity(stationCfg.NPC)
-                                    stationCfg.NPC = nil
-                                end
-                            end
-                        end
-                        if distance <= stationCfg.shop.distance then
-                            sleep = 0
-                            local shopOpen = CreateVarString(10, 'LITERAL_STRING', stationCfg.shop.prompt)
-                            PromptSetActiveGroupThisFrame(MenuGroup, shopOpen)
-                            PromptSetEnabled(MenuPrompt, true)
+            local distance = #(playerCoords - stationCfg.npc.coords)
+            IsShopClosed = isShopClosed(stationCfg)
 
-                            if Citizen.InvokeNative(0xC92AC953F0A982AE, MenuPrompt) then -- PromptHasStandardModeCompleted
-                                MainMenu(station)
-                            end
-                        end
-                    else
-                        -- Using Shop Hours - Shop Open - Job Locked
-                        if Stations[station].Blip then
-                            Citizen.InvokeNative(0x662D364ABF16DE2F, Stations[station].Blip, joaat(Config.blipColors[stationCfg.blip.color.job])) -- BlipAddModifier
-                        end
-                        local distance = #(pCoords - stationCfg.npc.coords)
-                        if stationCfg.npc.active then
-                            if distance <= stationCfg.npc.distance then
-                                if not stationCfg.NPC then
-                                    AddNPC(station)
-                                end
-                            else
-                                if stationCfg.NPC then
-                                    DeleteEntity(stationCfg.NPC)
-                                    stationCfg.NPC = nil
-                                end
-                            end
-                        end
-                        if distance <= stationCfg.shop.distance then
-                            sleep = 0
-                            local shopOpen = CreateVarString(10, 'LITERAL_STRING', stationCfg.shop.prompt)
-                            PromptSetActiveGroupThisFrame(MenuGroup, shopOpen)
-                            PromptSetEnabled(MenuPrompt, true)
+            ManageBlip(station, IsShopClosed)
 
-                            if Citizen.InvokeNative(0xC92AC953F0A982AE, MenuPrompt) then -- PromptHasStandardModeCompleted
-                                local hasJob = VORPcore.Callback.TriggerAwait('bcc-train:JobCheck', station)
-                                if hasJob then
-                                    MainMenu(station)
-                                else
-                                    VORPcore.NotifyRightTip(_U('wrongJob'), 4000)
-                                end
-                            end
-                        end
-                    end
-                end
-            else
-                -- Not Using Shop Hours - Shop Always Open
-                if stationCfg.blip.show then
-                    if not Stations[station].Blip then
-                        AddBlip(station)
-                    end
-                    Citizen.InvokeNative(0x662D364ABF16DE2F, Stations[station].Blip, joaat(Config.blipColors[stationCfg.blip.color.open])) -- BlipAddModifier
-                end
-                if not stationCfg.shop.jobsEnabled then
-                    local distance = #(pCoords - stationCfg.npc.coords)
-                    if stationCfg.npc.active then
-                        if distance <= stationCfg.npc.distance then
-                            if not stationCfg.NPC then
-                                AddNPC(station)
-                            end
-                        else
-                            if stationCfg.NPC then
-                                DeleteEntity(stationCfg.NPC)
-                                stationCfg.NPC = nil
-                            end
-                        end
-                    end
-                    if distance <= stationCfg.shop.distance then
-                        sleep = 0
-                        local shopOpen = CreateVarString(10, 'LITERAL_STRING', stationCfg.shop.prompt)
-                        PromptSetActiveGroupThisFrame(MenuGroup, shopOpen)
-                        PromptSetEnabled(MenuPrompt, true)
+            if distance > stationCfg.npc.distance or IsShopClosed then
+                RemoveNPC(station)
+            elseif stationCfg.npc.active then
+                AddNPC(station)
+            end
 
-                        if Citizen.InvokeNative(0xC92AC953F0A982AE, MenuPrompt) then -- PromptHasStandardModeCompleted
-                            MainMenu(station)
-                        end
-                    end
+            if distance <= stationCfg.shop.distance then
+                sleep = 0
+                local promptText
+                if IsShopClosed then
+                    promptText = ('%s %s %d %s %d %s'):format(
+                        stationCfg.shop.name,
+                        _U('hours'),
+                        stationCfg.shop.hours.open,
+                        _U('to'),
+                        stationCfg.shop.hours.close,
+                        _U('hundred')
+                    )
                 else
-                    -- Not Using Shop Hours - Shop Always Open - Job Locked
-                    if Stations[station].Blip then
-                        Citizen.InvokeNative(0x662D364ABF16DE2F, Stations[station].Blip, joaat(Config.blipColors[stationCfg.blip.color.job])) -- BlipAddModifier
-                    end
-                    local distance = #(pCoords - stationCfg.npc.coords)
-                    if stationCfg.npc.active then
-                        if distance <= stationCfg.npc.distance then
-                            if not stationCfg.NPC then
-                                AddNPC(station)
-                            end
-                        else
-                            if stationCfg.NPC then
-                                DeleteEntity(stationCfg.NPC)
-                                stationCfg.NPC = nil
-                            end
-                        end
-                    end
-                    if distance <= stationCfg.shop.distance then
-                        sleep = 0
-                        local shopOpen = CreateVarString(10, 'LITERAL_STRING', stationCfg.shop.prompt)
-                        PromptSetActiveGroupThisFrame(MenuGroup, shopOpen)
-                        PromptSetEnabled(MenuPrompt, true)
+                    promptText = stationCfg.shop.prompt
+                end
 
-                        if Citizen.InvokeNative(0xC92AC953F0A982AE, MenuPrompt) then -- PromptHasStandardModeCompleted
-                            local hasJob = VORPcore.Callback.TriggerAwait('bcc-train:JobCheck', station)
-                            if hasJob then
-                                MainMenu(station)
-                            else
-                                VORPcore.NotifyRightTip(_U('wrongJob'), 4000)
+                UiPromptSetActiveGroupThisFrame(MenuGroup, CreateVarString(10, 'LITERAL_STRING', promptText), 1, 0, 0, 0)
+                UiPromptSetEnabled(MenuPrompt, not IsShopClosed)
+
+                if not IsShopClosed then
+                    if Citizen.InvokeNative(0xC92AC953F0A982AE, MenuPrompt) then -- PromptHasStandardModeCompleted
+                        if stationCfg.shop.jobsEnabled then
+                            local hasJob = Core.Callback.TriggerAwait('bcc-train:CheckJob', station)
+                            if hasJob ~= true then
+                                goto END
                             end
                         end
+                        OpenShopMenu(station)
                     end
                 end
             end
         end
-        ::continue::
+        ::END::
         Wait(sleep)
     end
 end)
 
-function SpawnTrain(trainCfg, myTrainData, dirChange, station) --credit to rsg_trains for some of the logic here
-    local model = trainCfg.model
-    local trainHash = joaat(model)
-    TrainFuel = myTrainData.fuel
-    TrainCondition = myTrainData.condition
-    TrainId = myTrainData.trainid
+function OpenShopMenu(station)
+    -- Validate station parameter
+    if not station then
+        DBG.Error('Invalid station provided to OpenShopMenu')
+        return
+    end
 
-    LoadTrainCars(trainHash)
-    MyTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, Stations[station].train.coords, dirChange, false, true, false) -- CreateMissionTrain
-    SetModelAsNoLongerNeeded(model)
+    -- Get station configuration
+    local stationCfg = Stations[station]
+    if not stationCfg or not stationCfg.train or not stationCfg.train.camera or not stationCfg.train.coords then
+        DBG.Error('Invalid station configuration for camera setup in OpenShopMenu')
+        return
+    end
+
+    -- Create and set up camera
+    local trainCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+    SetCamCoord(trainCam, stationCfg.train.camera.x, stationCfg.train.camera.y, stationCfg.train.camera.z)
+    SetCamActive(trainCam, true)
+    PointCamAtCoord(trainCam, stationCfg.train.coords.x, stationCfg.train.coords.y, stationCfg.train.coords.z)
+    SetCamFov(trainCam, 50.0)
+
+    -- Transition to camera and open menu
+    DoScreenFadeOut(500)
+    Wait(500)
+    ShopMenu(station)
+    DoScreenFadeIn(500)
+    RenderScriptCams(true, false, 0, false, false, 0)
+end
+
+function SpawnTrain(myTrainData, trainCfg, direction, station) --credit to rsg_trains for some of the logic here
+    -- Validate parameters
+    if not trainCfg or not myTrainData then
+        DBG.Error('Invalid parameters provided to SpawnTrain')
+        return
+    end
+
+    -- Use the train model from database - this should be a hex hash after migration
+    local modelToSpawn = myTrainData.trainModel
+    if not modelToSpawn then
+        DBG.Error('No train model available in database record')
+        return
+    end
+
+    -- Convert hex hash to numeric for spawning
+    local hash = tonumber(modelToSpawn)
+    if not hash then
+        DBG.Error(string.format('Failed to convert hex hash to numeric: %s', tostring(modelToSpawn)))
+        return
+    end
+
+    TrainFuel = tonumber(myTrainData.fuel) or 0
+    TrainCondition = tonumber(myTrainData.condition) or 0
+    TrainId = tonumber(myTrainData.trainid) or 0
+    SpawnedStation = station -- Track which station this train was spawned from
+
+    if TrainId == 0 then
+        DBG.Error('Invalid train ID provided')
+        return
+    end
+
+    LoadTrainCars(hash, false) -- false = not a preview
+    local coords = Stations[station].train.coords
+    local conductor = false    -- Set to true if you want an AI conductor to be present (set speed once)
+    local passengers = false   -- Set to true if you want AI passengers to be present (untested)
+    MyTrain = CreateMissionTrain(hash, coords.x, coords.y, coords.z, direction, passengers, true, conductor)
+
+    if MyTrain == 0 then
+        DBG.Error('Failed to create train entity')
+        return
+    end
+
+    SetModelAsNoLongerNeeded(hash)
     -- Freeze Train on Spawn
-    Citizen.InvokeNative(0xDFBA6BBFF7CCAFBB, MyTrain, 0.0) -- SetTrainSpeed
-    Citizen.InvokeNative(0x01021EB2E96B793C, MyTrain, 0.0) -- SetTrainCruiseSpeed
+    SetTrainSpeed(MyTrain, 0.0)
+    SetTrainCruiseSpeed(MyTrain, 0.0)
 
-    TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', true, MyTrain)
+    local netId = NetworkGetNetworkIdFromEntity(MyTrain)
+    TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', true, netId, TrainId, station)
 
     if trainCfg.blip.show then
-        local trainBlip = Citizen.InvokeNative(0x23f74c2fda6e7c61, -1749618580, MyTrain) -- BlipAddForEntity
+        local trainBlip = Citizen.InvokeNative(0x23f74c2fda6e7c61, -1749618580, MyTrain)                   -- BlipAddForEntity
         SetBlipSprite(trainBlip, joaat(trainCfg.blip.sprite), true)
-        Citizen.InvokeNative(0x9CB1A1623062F402, trainBlip, trainCfg.blip.name) -- SetBlipNameFromPlayerString
-        Citizen.InvokeNative(0x662D364ABF16DE2F, trainBlip, joaat(Config.blipColors[trainCfg.blip.color])) -- BlipAddModifier
+        Citizen.InvokeNative(0x9CB1A1623062F402, trainBlip, trainCfg.blip.name)                            -- SetBlipNameFromPlayerString
+        Citizen.InvokeNative(0x662D364ABF16DE2F, trainBlip, joaat(Config.BlipColors[trainCfg.blip.color])) -- BlipAddModifier
     end
 
     if trainCfg.inventory.enabled then
-        TriggerServerEvent('bcc-train:RegisterInventory', TrainId, model)
+        TriggerServerEvent('bcc-train:RegisterInventory', TrainId, modelToSpawn)
     end
 
-    if trainCfg.fuel.enabled then
+    if trainCfg.gamerTag.enabled then
+        TriggerEvent('bcc-train:TrainTag', trainCfg, myTrainData)
+    end
+
+    if trainCfg.steamer and trainCfg.fuel.enabled then
         TriggerEvent('bcc-train:FuelDecreaseHandler', trainCfg, myTrainData)
     end
 
@@ -214,24 +322,29 @@ function SpawnTrain(trainCfg, myTrainData, dirChange, station) --credit to rsg_t
         TriggerEvent('bcc-train:CondDecreaseHandler', trainCfg, myTrainData)
     end
 
-    if trainCfg.fuel.enabled or trainCfg.condition.enabled then
-        TriggerEvent('bcc-train:TargetMenu', trainCfg)
-    end
     TriggerEvent('bcc-train:TrainHandler', trainCfg, myTrainData)
-    TriggerEvent('bcc-train:TrainActions')
+
+    if Config.seated then
+        DoScreenFadeOut(500)
+        Wait(500)
+        SetPedIntoVehicle(PlayerPedId(), MyTrain, -1)
+        Wait(500)
+        DoScreenFadeIn(500)
+    end
 end
 
 AddEventHandler('bcc-train:TrainHandler', function(trainCfg, myTrainData)
     DrivingMenuOpened = false
-    while MyTrain do
+    local despawnDist = Config.despawnDist or 300.0
+    while MyTrain ~= 0 do
         local sleep = 1000
         local playerPed = PlayerPedId()
         local isDead = IsEntityDead(playerPed)
         local distance = #(GetEntityCoords(playerPed) - GetEntityCoords(MyTrain))
-        if distance >= Config.despawnDist or isDead then
-            if MyTrain then
-                if not isDead then
-                    VORPcore.NotifyRightTip(_U('tooFarFromTrain'), 4000)
+        if distance >= despawnDist or isDead then
+            if MyTrain ~= 0 then
+                if distance >= despawnDist and not isDead then
+                    Core.NotifyRightTip(_U('trainReturnedDistance'), 4000)
                 end
                 TriggerEvent('bcc-train:ResetTrain')
                 break
@@ -241,16 +354,13 @@ AddEventHandler('bcc-train:TrainHandler', function(trainCfg, myTrainData)
             if not Citizen.InvokeNative(0xE052C1B1CAA4ECE4, MyTrain, -1) and GetPedInVehicleSeat(MyTrain, -1) == playerPed then -- IsVehicleSeatFree
                 if not DrivingMenuOpened then
                     DrivingMenuOpened = true
-                    DrivingMenu(trainCfg, myTrainData)
-                    ShowHUD(TrainCondition, trainCfg.condition.maxAmount, TrainFuel, trainCfg.fuel.maxAmount)
+                    -- Freshly opening the driving menu (player just entered seat) should reset persisted speed
+                    DrivingMenu(trainCfg, myTrainData, true)
                 end
             else
                 if DrivingMenuOpened then
-                    DrivingMenuOpened = false
-                    VORPMenu.CloseAll()
-                    HideHUD()
-                    ForwardActive = false
-                    BackwardActive = false
+                    -- Use centralized handler so persisted state (like DrivingMenuSpeed) is reset
+                    TriggerEvent('bcc-train:DrivingMenuClosed')
                 end
             end
         end
@@ -258,73 +368,245 @@ AddEventHandler('bcc-train:TrainHandler', function(trainCfg, myTrainData)
     end
 end)
 
-AddEventHandler('bcc-train:FuelDecreaseHandler', function(trainCfg, myTrainData)
-    local fuelEmpty = false
-    while MyTrain do
+AddEventHandler('bcc-train:TrainTag', function(trainCfg, myTrainData)
+    local tagDist = trainCfg.gamerTag.distance
+    local tagId = Citizen.InvokeNative(0xE961BF23EAB76B12, MyTrain, myTrainData.name) -- CreateMpGamerTagOnEntity
+    while MyTrain ~= 0 do
         Wait(1000)
-        if EngineStarted and TrainFuel >= 1 then
-            Wait(trainCfg.fuel.decreaseTime * 1000)
-            local fuel = VORPcore.Callback.TriggerAwait('bcc-train:DecTrainFuel', TrainId, TrainFuel, trainCfg)
-            if fuel then
-                FuelUpdate(fuel)
-            end
+        local playerPed = PlayerPedId()
+        local dist = #(GetEntityCoords(playerPed) - GetEntityCoords(MyTrain))
+
+        if dist <= tagDist and not Citizen.InvokeNative(0xEC5F66E459AF3BB2, playerPed, MyTrain) then -- IsPedOnSpecificVehicle
+            Citizen.InvokeNative(0x93171DDDAB274EB8, tagId, 3)                                       -- SetMpGamerTagVisibility
         else
-            Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
-        end
-        if TrainFuel <= 0 and not fuelEmpty then
-            fuelEmpty = true
-            EngineStarted = false
-            Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
-            if DrivingMenuOpened then
-                DrivingMenu(trainCfg, myTrainData)
+            if Citizen.InvokeNative(0x502E1591A504F843, tagId, MyTrain) then                         -- IsMpGamerTagActiveOnEntity
+                Citizen.InvokeNative(0x93171DDDAB274EB8, tagId, 0)                                   -- SetMpGamerTagVisibility
             end
-        elseif fuelEmpty and TrainFuel >= 1 then
-            fuelEmpty = false
         end
     end
+    Citizen.InvokeNative(0x839BFD7D7E49FE09, Citizen.PointerValueIntInitialized(tagId)) -- RemoveMpGamerTag
+end)
+
+-- Ensure DrivingMenu is closed when train is reset or player is ejected
+AddEventHandler('bcc-train:DrivingMenuClosed', function()
+    if DrivingMenuOpened then
+        DrivingMenuOpened = false
+        Menu.CloseAll()
+        ForwardActive = false
+        BackwardActive = false
+    end
+    -- reset persisted speed
+    DrivingMenuSpeed = 0
+end)
+
+local function startPeriodicTrainStat(statName, getValueFn, setValueFn, cfgField, serverCallback, trainCfg, myTrainData)
+    -- Runs in its own thread; waits the configured interval between server calls
+    CreateThread(function()
+        local interval = (trainCfg[cfgField].decreaseTime or 60) * 1000
+        local emptyFlag = false
+        while MyTrain ~= 0 do
+            if EngineStarted and getValueFn() >= 1 then
+                -- Wait the configured interval once (avoids extra small waits)
+                Wait(interval)
+                local ok, res = pcall(function()
+                    return Core.Callback.TriggerAwait(serverCallback, TrainId, getValueFn(), trainCfg)
+                end)
+                if ok and res ~= nil then
+                    setValueFn(tonumber(res))
+                    if DrivingMenuOpened then
+                        DrivingMenu(trainCfg, myTrainData, false)
+                    end
+                else
+                    DBG.Error('Failed to update train ' .. statName)
+                end
+            else
+                -- Ensure train won't move if engine isn't started or stat is depleted
+                if MyTrain and MyTrain ~= 0 then
+                    Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
+                end
+                Wait(1000)
+            end
+
+            local current = getValueFn()
+            if current <= 0 and not emptyFlag then
+                emptyFlag = true
+                EngineStarted = false
+                if MyTrain and MyTrain ~= 0 then
+                    Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
+                end
+                if DrivingMenuOpened then
+                    DrivingMenu(trainCfg, myTrainData, false)
+                end
+            elseif emptyFlag and current >= 1 then
+                emptyFlag = false
+            end
+        end
+    end)
+end
+
+AddEventHandler('bcc-train:FuelDecreaseHandler', function(trainCfg, myTrainData)
+    -- get/set helpers for TrainFuel
+    startPeriodicTrainStat('fuel', function() return TrainFuel end, function(v) TrainFuel = v end, 'fuel', 'bcc-train:DecTrainFuel', trainCfg, myTrainData)
 end)
 
 AddEventHandler('bcc-train:CondDecreaseHandler', function(trainCfg, myTrainData)
-    local conditionEmpty = false
-    while MyTrain do
-        Wait(1000)
-        if EngineStarted and TrainCondition >= 1 then
-            Wait(trainCfg.condition.decreaseTime * 1000)
-            local cond = VORPcore.Callback.TriggerAwait('bcc-train:DecTrainCond', TrainId, TrainCondition, trainCfg)
-            if cond then
-                ConditionUpdate(cond)
-            end
-        else
-            Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
-        end
-        if TrainCondition <= 0 and not conditionEmpty then
-            conditionEmpty = true
-            EngineStarted = false
-            Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, 0.0) -- SetTrainMaxSpeed
-            if DrivingMenuOpened then
-                DrivingMenu(trainCfg, myTrainData)
-            end
-        elseif conditionEmpty and TrainCondition >= 1 then
-            conditionEmpty = false
+    -- get/set helpers for TrainCondition
+    startPeriodicTrainStat('condition', function() return TrainCondition end, function(v) TrainCondition = v end, 'condition', 'bcc-train:DecTrainCond', trainCfg, myTrainData)
+end)
+
+-- Key monitoring for train inventory
+CreateThread(function()
+    local invKey = Config.keys.inventory
+
+    while true do
+        Wait(0)
+
+        if IsControlJustPressed(0, invKey) then
+            ExecuteCommand('trainInv')
+            Wait(500)
         end
     end
 end)
 
--- Open Train Inventory
-AddEventHandler('bcc-train:TrainActions', function()
-    local invKey = Config.keys.inventory
-    while MyTrain do
-        local playerPed = PlayerPedId()
-        Wait(0)
-        if Citizen.InvokeNative(0x580417101DDB492F, 0, invKey) then -- IsControlJustPressed
-            if not Citizen.InvokeNative(0x6F972C1AB75A1ED0, playerPed) then -- IsPedInAnyTrain
-                goto continue
+RegisterCommand('trainInv', function()
+    local isInTrain = IsPedInAnyTrain(PlayerPedId())
+    DBG.Info('Open train inventory command triggered. Is in train: ' .. tostring(isInTrain))
+    TriggerServerEvent('bcc-train:OpenInventory', isInTrain)
+end, false)
+
+AddEventHandler('playerDropped', function()
+    if MyTrain ~= 0 then
+        if DoesEntityExist(MyTrain) then
+            DeleteEntity(MyTrain)
+        end
+        MyTrain = 0
+        TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, nil, TrainId, SpawnedStation)
+        -- Ensure driving UI state cleared when player drops
+        TriggerEvent('bcc-train:DrivingMenuClosed')
+    end
+end)
+
+RegisterNetEvent('bcc-train:StartLockpick', function(trainId)
+    -- Validate trainId parameter
+    if not trainId or type(trainId) ~= 'number' then
+        DBG.Error(string.format('Invalid trainId provided for lockpick: %s', tostring(trainId)))
+        return
+    end
+
+    -- Validate config exists
+    if not Config.lockPick then
+        DBG.Error('Lockpick configuration not found')
+        return
+    end
+
+    -- Determine degrees based on config
+    local degrees = {}
+    if Config.lockPick.randomDegrees then
+
+        -- Use random degrees
+        degrees = {
+            math.random(0, 360),
+            math.random(0, 360),
+            math.random(0, 360)
+        }
+    else
+        -- Use static degrees from config
+        degrees = Config.lockPick.staticDegrees or { 90, 180, 270 } -- Fallback if not configured
+    end
+
+    -- Minigame Config
+    local cfg = {
+        focus = true,                                   -- Should minigame take nui focus
+        cursor = true,                                  -- Should minigame have cursor  (required for lockpick)
+        maxattempts = Config.lockPick.maxAttempts or 3, -- How many fail attempts are allowed before game over
+        threshold = Config.lockPick.difficulty or 20,   -- +- threshold to the stage degree (bigger number means easier)
+        hintdelay = Config.lockPick.hintdelay or 100,   -- milliseconds delay on when the circle will shake to show lockpick is in the right position.
+        stages = {
+            {
+                deg = degrees[1] -- 0-360 degrees
+            },
+            {
+                deg = degrees[2] -- 0-360 degrees
+            },
+            {
+                deg = degrees[3] -- 0-360 degrees
+            }
+        }
+    }
+
+    MiniGame.Start('lockpick', cfg, function(result)
+        if not result then
+            DBG.Error('Lockpick minigame returned nil result')
+            Core.NotifyRightTip(_U('pickAttemptFailed'), 4000)
+            TriggerServerEvent('bcc-train:ConsumeLockpick')
+            return
+        end
+
+        local success = (type(result) == 'table' and result.unlocked) or (result == true)
+        if success then
+            TriggerServerEvent('bcc-train:OpenInventoryAfterLockpick', trainId)
+        else
+            Core.NotifyRightTip(_U('pickAttemptFailed'), 4000)
+            TriggerServerEvent('bcc-train:ConsumeLockpick')
+        end
+    end)
+end)
+
+-- Blow-up Bacchus Bridge
+RegisterNetEvent('bcc-train:BridgeFall', function()
+    local ran = 0
+    local playerCoords = GetEntityCoords(PlayerPedId())
+
+    repeat
+        local object = GetRayfireMapObject(playerCoords.x, playerCoords.y, playerCoords.z, 10000.0, 'des_trn3_bridge')
+        if object ~= 0 then
+            SetStateOfRayfireMapObject(object, 4)
+        end
+
+        Wait(100)
+        AddExplosion(521.13, 1754.46, 187.65, 28, 1.0, true, false, 0)
+        AddExplosion(507.28, 1762.3, 187.77, 28, 1.0, true, false, 0)
+        AddExplosion(527.21, 1748.86, 187.8, 28, 1.0, true, false, 0)
+        Wait(100)
+
+        if object ~= 0 then
+            SetStateOfRayfireMapObject(object, 6) -- SetStateOfRayfireMapObject
+        end
+
+        ran = ran + 1
+    until ran == 2 --has to run twice no idea why
+
+    --Spawning ghost train model as the game engine wont allow trains to hit each other this will slow the trains down automatically if near the exploded part of the bridge
+    Wait(1000)
+    local trainHash = joaat('engine_config')
+    LoadTrainCars(trainHash, false)                                                                                            -- false = not a preview (ghost train for bridge)
+    local ghostTrain = Citizen.InvokeNative(0xc239dbd9a57d2a71, trainHash, 499.69, 1768.78, 188.77, false, false, true,
+        false)                                                                                                                 -- CreateMissionTrain
+
+    -- Freeze Train on Spawn
+    Citizen.InvokeNative(0xDFBA6BBFF7CCAFBB, ghostTrain, 0.0) -- SetTrainSpeed
+    Citizen.InvokeNative(0x01021EB2E96B793C, ghostTrain, 0.0) -- SetTrainCruiseSpeed
+
+    SetEntityVisible(ghostTrain, false)
+    SetEntityCollision(ghostTrain, false, false)
+end)
+
+CreateThread(function()
+    if Config.bacchusBridge.enabled then
+        local bridgeCoords = Config.bacchusBridge.coords
+        while true do
+            local sleep = 1000
+            local distance = #(GetEntityCoords(PlayerPedId()) - bridgeCoords)
+            if distance <= 2 then
+                sleep = 0
+                UiPromptSetActiveGroupThisFrame(BridgeGroup, CreateVarString(10, 'LITERAL_STRING', _U('bacchusBridge')),
+                    1, 0, 0, 0)
+                if Citizen.InvokeNative(0xE0F65F0640EF0617, BridgePrompt) then -- PromptHasHoldModeCompleted
+                    Wait(500)
+                    TriggerServerEvent('bcc-train:BridgeFallHandler', false)
+                end
             end
-            local dist = #(GetEntityCoords(playerPed) - GetEntityCoords(MyTrain))
-            if dist <= 10 then
-                TriggerServerEvent('bcc-train:OpenInventory', TrainId)
-            end
-            ::continue::
+            Wait(sleep)
         end
     end
 end)
@@ -334,10 +616,24 @@ AddEventHandler('onResourceStop', function(resourceName)
     if (GetCurrentResourceName() ~= resourceName) then
         return
     end
-    if MyTrain then
-        DeleteEntity(MyTrain)
-        HideHUD()
+
+    if MyTrain ~= 0 then
+        if DoesEntityExist(MyTrain) then
+            DeleteEntity(MyTrain)
+        end
+        MyTrain = 0
+        -- Notify server about train cleanup
+        TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, nil, TrainId, SpawnedStation)
+        -- Ensure driving UI state cleared during resource stop
+        TriggerEvent('bcc-train:DrivingMenuClosed')
     end
+
+    -- Clean up preview train
+    if PreviewTrain and DoesEntityExist(PreviewTrain) then
+        DeleteEntity(PreviewTrain)
+        PreviewTrain = nil
+    end
+
     for _, stationCfg in pairs(Stations) do
         if stationCfg.Blip then
             RemoveBlip(stationCfg.Blip)
@@ -348,22 +644,23 @@ AddEventHandler('onResourceStop', function(resourceName)
             stationCfg.NPC = nil
         end
     end
-    VORPMenu.CloseAll()
+
+    Menu.CloseAll()
+    DestroyAllCams(true)
     DisplayRadar(true)
+    TrainShopMenu:Close()
+
     if DestinationBlip then
-        RemoveBlip(DestinationBlip)
+        if DoesBlipExist(DestinationBlip) then
+            RemoveBlip(DestinationBlip)
+        end
         DestinationBlip = nil
     end
-    if DeliveryBlip then
-        RemoveBlip(DeliveryBlip)
-        DeliveryBlip = nil
-    end
-end)
 
-AddEventHandler('playerDropped', function ()
-    if MyTrain then
-        DeleteEntity(MyTrain)
-        MyTrain = nil
-        TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false)
+    if DeliveryBlip then
+        if DoesBlipExist(DeliveryBlip) then
+            RemoveBlip(DeliveryBlip)
+        end
+        DeliveryBlip = nil
     end
 end)

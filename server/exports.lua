@@ -1,28 +1,52 @@
 -- Check If train is spawned or in use
 exports('CheckIfTrainIsSpawned', function()
-    if TrainSpawned then
-        return true
-    else
+    local success, result = pcall(function()
+        return TrainSpawned == true
+    end)
+
+    if not success then
+        print(string.format("ERROR in CheckIfTrainIsSpawned export: %s", result))
         return false
     end
+
+    return result
 end)
 
 -- Get Train Entity
 exports('GetTrainEntity', function()
-    if TrainSpawned then
-        if TrainEntity then
-            return TrainEntity
+    local success, result = pcall(function()
+        if TrainSpawned and TrainEntity then
+            -- Validate that the entity still exists
+            if DoesEntityExist(TrainEntity) then
+                return TrainEntity
+            else
+                -- Entity no longer exists, reset state
+                TrainSpawned = false
+                TrainEntity = nil
+                return false
+            end
         end
-    else
+        return false
+    end)
+
+    if not success then
+        print(string.format("ERROR in GetTrainEntity export: %s", result))
         return false
     end
+
+    return result
 end)
 
--- Check if baccus bridge destroyed
+-- Check if bacchus bridge destroyed
 exports('BacchusBridgeDestroyed', function()
-    if BridgeDestroyed then
-        return true
-    else
+    local success, result = pcall(function()
+        return BridgeDestroyed == true
+    end)
+
+    if not success then
+        print(string.format("ERROR in BacchusBridgeDestroyed export: %s", result))
         return false
     end
+
+    return result
 end)

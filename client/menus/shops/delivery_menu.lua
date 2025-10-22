@@ -107,12 +107,18 @@ function DeliveryMissionConfirmation(station)
         })
     end
 
-    -- Items (each on its own line)
+    -- Items (each on its own line) - batch resolve labels to avoid multiple RPCs
     if rewards.items and #rewards.items > 0 then
+        local ids = {}
+        for _, r in ipairs(rewards.items) do
+            if r and r.item then ids[#ids+1] = r.item end
+        end
+        local labels = GetItemLabelsCached(ids)
         for _, r in ipairs(rewards.items) do
             if r and r.item and r.quantity then
+                local label = labels[r.item] or GetItemLabelCached(r.item)
                 ConfirmationPage:RegisterElement('textdisplay', {
-                    value = string.format('• %sx %s', tostring(r.quantity), tostring(r.item)),
+                    value = string.format('• %sx %s', tostring(r.quantity), tostring(label)),
                     slot = 'content',
                     style = {
                         ['color'] = '#E0E0E0',
@@ -150,6 +156,12 @@ function DeliveryMissionConfirmation(station)
                 end
             end
 
+            -- Batch resolve labels for required items
+            local reqIds = {}
+            for _, requiredItem in ipairs(destination.items) do
+                if requiredItem and requiredItem.item then reqIds[#reqIds+1] = requiredItem.item end
+            end
+            local reqLabels = GetItemLabelsCached(reqIds)
             for _, requiredItem in ipairs(destination.items) do
                 -- Validate requiredItem structure
                 if not requiredItem or not requiredItem.item or not requiredItem.quantity then
@@ -164,8 +176,9 @@ function DeliveryMissionConfirmation(station)
                 local hasItem = haveCount >= needCount
                 local color = hasItem and '#E0E0E0' or '#FF6B6B'
 
+                local reqLabel = reqLabels[requiredItem.item] or GetItemLabelCached(requiredItem.item)
                 ConfirmationPage:RegisterElement('textdisplay', {
-                    value = string.format('• %s: %d/%d', requiredItem.item, haveCount, needCount),
+                    value = string.format('• %s: %d/%d', reqLabel, haveCount, needCount),
                     slot = 'content',
                     style = {
                         ['color'] = color,

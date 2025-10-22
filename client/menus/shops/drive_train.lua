@@ -46,6 +46,32 @@ local function ApplyNativeTrainSpeed(signedTarget)
     end
 end
 
+-- Shared stepped ramp helper: ramps linearly from 'fromMag' to 'toMag' over
+-- RAMP_STEPS steps, waiting RAMP_STEP_WAIT ms between steps. This ensures
+-- engine stop and cruise on/off use identical ramp behavior and timing.
+-- Read ramp settings from config, with sensible defaults
+local RAMP_STEPS = (Config and Config.driving and Config.driving.rampSteps) or 16
+local RAMP_STEP_WAIT = (Config and Config.driving and Config.driving.rampStepWait) or 125
+local function StepRampLinear(fromMag, toMag, sign)
+    local steps = RAMP_STEPS
+    if steps <= 0 then
+        CruiseAppliedMag = toMag
+        if MyTrain and MyTrain ~= 0 then ApplyNativeTrainSpeed(sign * toMag) end
+        return
+    end
+    for i = 1, steps do
+        local t = i / steps
+        local mag = fromMag + (toMag - fromMag) * t
+        CruiseAppliedMag = mag
+        if MyTrain and MyTrain ~= 0 then
+            ApplyNativeTrainSpeed(sign * mag)
+        end
+        Wait(RAMP_STEP_WAIT)
+    end
+    CruiseAppliedMag = toMag
+    if MyTrain and MyTrain ~= 0 then ApplyNativeTrainSpeed(sign * toMag) end
+end
+
 -- Smoothly ramp the train speed down to zero over several steps
 local function SmoothStopTrain()
     if not MyTrain or MyTrain == 0 then
@@ -73,15 +99,9 @@ local function SmoothStopTrain()
         return
     end
 
-    -- ramp down in steps
-    local steps = 12
-    for i = 1, steps do
-        local t = 1 - (i / steps)
-        local mag = startMag * t
-        ApplyNativeTrainSpeed(sign * mag)
-        Wait(100)
-    end
-    ApplyNativeTrainSpeed(0.0)
+    -- ramp down in steps (use shared stepped-ramp helper to keep behavior
+    -- consistent with cruise on/off).
+    StepRampLinear(startMag, 0.0, sign)
     DrivingMenuSpeed = 0
     CruiseAppliedMag = 0.0
     CruiseActive = false
@@ -97,8 +117,22 @@ local function startCruise()
     if CruiseActive then return end
     CruiseActive = true
     CreateThread(function()
-        Core.NotifyRightTip(_U('forwardEnabled'), 4000)
-        local smoothFactor = 0.18 -- how quickly we approach the target (0..1)
+        -- Notify depending on travel direction
+        if CruiseDirection == -1 then
+            Core.NotifyRightTip(_U('backwardEnabled'), 4000)
+        else
+            Core.NotifyRightTip(_U('forwardEnabled'), 4000)
+        end
+        -- Immediately hold the captured DrivingMenuSpeed when cruise is toggled
+        -- on; do not perform a ramp-up. This preserves the player's current
+        -- speed exactly when they engage cruise.
+        local targetMag = DrivingMenuSpeed or 0
+        if targetMag > 0 and MyTrain and MyTrain ~= 0 then
+            CruiseAppliedMag = targetMag
+            ApplyNativeTrainSpeed((CruiseDirection or 1) * targetMag)
+        end
+
+        local smoothFactor = 0.18 -- how quickly we approach the target (kept for stability)
         while CruiseActive do
             Wait(100)
             if not MyTrain or MyTrain == 0 then
@@ -169,11 +203,9 @@ local function stopCruise()
     end
     -- instead of snapping to zero, ramp CruiseAppliedMag down smoothly to zero
     CreateThread(function()
-        local rampSteps = 8
-        for i = 1, rampSteps do
-            CruiseAppliedMag = CruiseAppliedMag * (1 - (i / (rampSteps + 1)))
-            Wait(100)
-        end
+        local startMag = CruiseAppliedMag or 0.0
+        local sign = CruiseDirection or 1
+        StepRampLinear(startMag, 0.0, sign)
         CruiseAppliedMag = 0.0
         CruiseActive = false
         -- ensure train stops

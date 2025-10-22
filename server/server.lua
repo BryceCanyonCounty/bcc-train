@@ -149,6 +149,8 @@ CreateThread(function()
     end
 end)
 
+-- Player position reporting and cleanup removed with global blip system.
+
 -- Cleanup disconnected players from tracking tables
 local function cleanupDisconnectedPlayer(source)
     local playerKey = tostring(source)
@@ -175,6 +177,21 @@ AddEventHandler('playerDropped', function(reason)
     cleanupDisconnectedPlayer(source)
 end)
 
+-- Item helpers (delegates to server/item_utils.lua via global BccTrainItemUtils)
+local function fetchItemInfo(itemId)
+    if BccTrainItemUtils and BccTrainItemUtils.fetchItemInfo then
+        return BccTrainItemUtils.fetchItemInfo(itemId)
+    end
+    return nil
+end
+
+local function getItemLabel(itemId)
+    if BccTrainItemUtils and BccTrainItemUtils.getItemLabel then
+        return BccTrainItemUtils.getItemLabel(itemId)
+    end
+    return tostring(itemId)
+end
+
 -- Mission tracking functions
 local function startDeliveryMission(source, destination)
     if not source or not destination then
@@ -197,8 +214,8 @@ local function startDeliveryMission(source, destination)
         for _, requiredItem in ipairs(destination.items) do
             local itemCount = exports.vorp_inventory:getItemCount(source, nil, requiredItem.item)
             if itemCount < requiredItem.quantity then
-                Core.NotifyRightTip(source, string.format('You need %d %s to start this delivery mission',
-                    requiredItem.quantity, requiredItem.item), 4000)
+                local itemLabel = getItemLabel(requiredItem.item)
+                Core.NotifyRightTip(source, _U('needItemsForDelivery') .. ': ' .. tostring(requiredItem.quantity) .. ' x ' .. tostring(itemLabel), 4000)
                 return false
             end
         end
@@ -345,9 +362,7 @@ if DevModeActive then
             west = SpawnedTrainsByRegion.west or 0
         }
 
-        Core.NotifyRightTip(source, string.format('East Region: %d/%d | West Region: %d/%d',
-            counts.east, Config.spawnLimits.east,
-            counts.west, Config.spawnLimits.west), 6000)
+        Core.NotifyRightTip(source, _U('regionLimits') .. ': ' .. tostring(counts.east) .. '/' .. tostring(Config.spawnLimits.east) .. ' | ' .. tostring(counts.west) .. '/' .. tostring(Config.spawnLimits.west), 6000)
 
         DBG.Info(string.format('Regional Limits - East: %d/%d, West: %d/%d',
             counts.east, Config.spawnLimits.east,
@@ -401,6 +416,99 @@ Core.Callback.Register('bcc-train:CheckJob', function(source, cb, shop)
 
     DBG.Success('User has the required job and grade.')
     cb(true)
+end)
+
+-- Helper: get human-friendly label for an item from the `items` DB table.
+-- Expose a simple callback so clients can resolve labels without running DB queries locally
+Core.Callback.Register('bcc-train:GetItemLabel', function(source, cb, itemId)
+    cb(getItemLabel(itemId))
+end)
+
+-- Batch resolver for multiple item ids. Returns a map { itemId = label }
+Core.Callback.Register('bcc-train:GetItemLabels', function(source, cb, items)
+    if not items or type(items) ~= 'table' then
+        return cb({})
+    end
+    local out = {}
+    for _, id in ipairs(items) do
+        out[id] = getItemLabel(id)
+    end
+    cb(out)
+end)
+
+-- Helper: return full item data (server-side). Shape returned approximates:
+-- { id=string, label=string, name=string, metadata=table, group=number, type=string, count=number, limit=number, canUse=boolean, weight=number, desc=string, percentage=integer }
+local function getItemData(itemId)
+    if not itemId then return nil end
+    if type(itemId) == 'table' then
+        local out = {}
+        for _, id in ipairs(itemId) do
+            out[id] = getItemData(id)
+        end
+        return out
+    end
+
+    local info = fetchItemInfo(itemId)
+    if info and type(info) == 'table' then
+        return info
+    end
+
+    -- Return minimal table as fallback
+    return { id = itemId, label = tostring(itemId), name = tostring(itemId), metadata = {}, group = 0, type = 'item', count = 0, limit = 0, canUse = false, weight = 0, desc = '', percentage = 0 }
+end
+
+-- Callback to return item data (single id string or table of ids)
+Core.Callback.Register('bcc-train:GetItemData', function(source, cb, item)
+    if not item then return cb(nil) end
+    cb(getItemData(item))
+end)
+
+-- Server-side permission check for the on-demand showtrains command.
+-- Returns true if the player is allowed to use the command, false otherwise.
+Core.Callback.Register('bcc-train:CanUseShowTrains', function(source, cb)
+    local src = source
+    local user = Core.getUser(src)
+
+    if not user then
+        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        return cb(false)
+    end
+
+
+    -- If the feature is disabled or missing, allow everyone by default
+    if not Config.trainBlips or not Config.trainBlips.showTrains then
+        return cb(true)
+    end
+
+    local cfg = Config.trainBlips.showTrains
+    if not cfg.jobsEnabled then
+        return cb(true)
+    end
+
+    local character = user.getUsedCharacter
+    if not character then
+        return cb(false)
+    end
+
+    local playerJob = character.job
+    local playerGrade = character.jobGrade or 0
+
+    -- If no jobs are configured, allow everyone
+    if not cfg.jobs or #cfg.jobs == 0 then
+        return cb(true)
+    end
+
+    for _, j in ipairs(cfg.jobs) do
+        local name = j.name
+        local minGrade = j.grade or 0
+        if playerJob == name and playerGrade >= minGrade then
+            return cb(true)
+        end
+    end
+
+    -- Not allowed
+    Core.NotifyRightTip(src, _U('needJob'), 4000)
+    return cb(false)
 end)
 
 -- Check if train can be spawned based on regional limits
@@ -472,7 +580,7 @@ Core.Callback.Register('bcc-train:CheckDeliveryItems', function(source, cb, dest
     })
 end)
 
-RegisterNetEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, netId, id, stationName)
+RegisterNetEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, netId, id, stationName, spawnCoords)
     local src = source
     local user = Core.getUser(src)
 
@@ -502,8 +610,41 @@ RegisterNetEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, netId, id, s
             return
         end
 
-        TrainEntity = NetworkGetEntityFromNetworkId(netId)
-        table.insert(ActiveTrains, { netId = netId, id = id, region = region })
+        -- Validate incoming netId to avoid broadcasting invalid ids that cause client warnings
+        local numericNetId = tonumber(netId)
+        if not numericNetId or numericNetId <= 0 then
+            if DevModeActive then
+                DBG.Warning(string.format('Received invalid netId from src=%s for train id=%s station=%s netId=%s', tostring(src), tostring(id), tostring(stationName), tostring(netId)))
+            end
+            numericNetId = nil
+        end
+
+        TrainEntity = nil
+        if numericNetId then
+            TrainEntity = NetworkGetEntityFromNetworkId(numericNetId)
+        end
+
+        -- Use global blip defaults from Config.trainBlips for broadcasts (ignore station-specific blip settings)
+        local blipSprite = nil
+        local blipColor = nil
+        if Config.trainBlips then
+            blipSprite = Config.trainBlips.sprite
+            blipColor = Config.trainBlips.color
+        end
+
+        local ownerName = character.firstname .. ' ' .. character.lastname
+
+        table.insert(ActiveTrains, {
+            netId = numericNetId,
+            id = id,
+            region = region,
+            owner = src,
+            station = stationName,
+            ownerName = ownerName,
+            blipSprite = blipSprite,
+            blipColor = blipColor,
+            coords = spawnCoords
+        })
 
         -- Update regional tracking
         SpawnedTrainsByRegion[region] = (SpawnedTrainsByRegion[region] or 0) + 1
@@ -523,6 +664,23 @@ RegisterNetEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, netId, id, s
             character.identifier ..
             _U('charIdWeb') ..
             character.charIdentifier)
+        -- Broadcast to all clients so every player can create a blip for this train (respect config)
+        if Config.trainBlips and Config.trainBlips.enabled then
+            -- Determine final name to send based on config
+            local nameMode = (Config.trainBlips and Config.trainBlips.nameMode) or 'player'
+            if nameMode ~= 'player' and nameMode ~= 'standard' then nameMode = 'player' end
+            local finalName = nil
+            if nameMode == 'player' then
+                finalName = ownerName
+            elseif nameMode == 'standard' then
+                finalName = Config.trainBlips.standardName or 'Train'
+            end
+
+            -- Global blip broadcasts disabled: we still track ActiveTrains server-side
+            if DevModeActive then
+                DBG.Info(string.format('Global blip broadcast skipped for train id=%s owner=%s (netId=%s)', tostring(id), tostring(src), tostring(numericNetId)))
+            end
+        end
     else
         TrainEntity = nil
 
@@ -539,6 +697,10 @@ RegisterNetEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, netId, id, s
                         SpawnedTrainsByRegion[trainRegion],
                         trainRegion == 'west' and Config.spawnLimits.west or Config.spawnLimits.east))
 
+                    -- Global blip broadcast removed; clients will not be explicitly notified by server.
+                    if DevModeActive then
+                        DBG.Info(string.format('Global despawn broadcast skipped for train id=%s netId=%s', tostring(train.id), tostring(train.netId)))
+                    end
                     table.remove(ActiveTrains, i)
                     break
                 end
@@ -559,6 +721,10 @@ RegisterNetEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, netId, id, s
                         SpawnedTrainsByRegion[trainRegion],
                         trainRegion == 'west' and Config.spawnLimits.west or Config.spawnLimits.east))
 
+                    -- Global blip despawn broadcast skipped for orphaned train
+                    if DevModeActive then
+                        DBG.Info(string.format('Global despawn broadcast skipped for orphaned train id=%s netId=%s', tostring(train.id), tostring(train.netId)))
+                    end
                     table.remove(ActiveTrains, i)
                 end
             end
@@ -588,7 +754,7 @@ RegisterNetEvent('bcc-train:RegisterInventory', function(id, model)
 
     -- Validate train ownership
     if not validateTrainOwnership(src, id) then
-        Core.NotifyRightTip(src, 'You do not own this train', 4000)
+                Core.NotifyRightTip(src, _U('notYourTrain'), 4000)
         return
     end
 
@@ -626,6 +792,28 @@ RegisterNetEvent('bcc-train:RegisterInventory', function(id, model)
             tostring(model)))
     end
 end)
+
+-- Provide a snapshot of current active trains to a requesting client (useful for late joiners)
+RegisterNetEvent('bcc-train:RequestActiveTrains', function()
+    local src = source
+    -- Build a minimal snapshot (netId, id, station, owner)
+    local snapshot = {}
+    for _, train in ipairs(ActiveTrains) do
+        table.insert(snapshot, {
+            netId = train.netId,
+            id = train.id,
+            station = train.station,
+            owner = train.owner,
+            ownerName = train.ownerName,
+            blipSprite = train.blipSprite,
+            blipColor = train.blipColor,
+            coords = train.coords
+        })
+    end
+    TriggerClientEvent('bcc-train:ActiveTrainsSnapshot', src, snapshot)
+end)
+
+-- Client position reporting removed (global blip system disabled)
 
 RegisterNetEvent('bcc-train:OpenInventory', function(isInTrain)
     local src = source
@@ -746,6 +934,8 @@ RegisterNetEvent('bcc-train:OpenInventory', function(isInTrain)
     end
 end)
 
+-- Position broadcasts removed as part of global blip system removal.
+
 RegisterNetEvent('bcc-train:OpenInventoryAfterLockpick', function(id)
     local src = source
     local user = Core.getUser(src)
@@ -773,7 +963,7 @@ RegisterNetEvent('bcc-train:ConsumeLockpick', function()
     local lockpickCooldown = (Config.rateLimiting and Config.rateLimiting.lockpickCooldown) or 10
     local canAttempt, timeRemaining = checkOperationCooldown(src, 'lockpick', lockpickCooldown)
     if not canAttempt then
-        Core.NotifyRightTip(src, string.format('Please wait %d seconds before attempting again', timeRemaining), 4000)
+    Core.NotifyRightTip(src, _U('pleaseWaitSeconds') .. ': ' .. tostring(timeRemaining) .. 's', 4000)
         return
     end
 
@@ -953,7 +1143,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
         if clientCurrency == 'gold' then
             if not trainPrice.gold then
                 DBG.Error('Train does not support gold payment')
-                Core.NotifyRightTip(src, 'This train cannot be purchased with gold', 4000)
+                Core.NotifyRightTip(src, _U('cannotPurchaseWithGold'), 4000)
                 return
             end
             price = trainPrice.gold
@@ -961,7 +1151,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
         elseif clientCurrency == 'cash' then
             if not trainPrice.cash then
                 DBG.Error('Train does not support cash payment')
-                Core.NotifyRightTip(src, 'This train cannot be purchased with cash', 4000)
+                Core.NotifyRightTip(src, _U('cannotPurchaseWithCash'), 4000)
                 return
             end
             price = trainPrice.cash
@@ -970,7 +1160,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
             -- Invalid currency selection - default to cash but validate it exists
             if not trainPrice.cash then
                 DBG.Error('Invalid currency selection and no cash price available')
-                Core.NotifyRightTip(src, 'Invalid payment method selected', 4000)
+                Core.NotifyRightTip(src, _U('invalidPaymentMethod'), 4000)
                 return
             end
             price = trainPrice.cash
@@ -1115,7 +1305,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
         if clientCurrency == 'gold' then
             if not trainPrice.gold then
                 DBG.Error('Train does not support gold payment')
-                Core.NotifyRightTip(src, 'This train cannot be sold for gold', 4000)
+                Core.NotifyRightTip(src, _U('cannotSellForGold'), 4000)
                 return
             end
             sellPrice = math.floor(sellMultiplier * trainPrice.gold)
@@ -1123,7 +1313,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
         elseif clientCurrency == 'cash' then
             if not trainPrice.cash then
                 DBG.Error('Train does not support cash payment')
-                Core.NotifyRightTip(src, 'This train cannot be sold for cash', 4000)
+                Core.NotifyRightTip(src, _U('cannotSellForCash'), 4000)
                 return
             end
             sellPrice = math.floor(sellMultiplier * trainPrice.cash)
@@ -1132,7 +1322,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
             -- Invalid currency selection - default to cash but validate it exists
             if not trainPrice.cash then
                 DBG.Error('Invalid currency selection and no cash price available')
-                Core.NotifyRightTip(src, 'Invalid payment method selected', 4000)
+                Core.NotifyRightTip(src, _U('invalidPaymentMethod'), 4000)
                 return
             end
             sellPrice = math.floor(sellMultiplier * trainPrice.cash)
@@ -1195,7 +1385,7 @@ RegisterNetEvent('bcc-train:RenameTrain', function(trainId, newName)
 
     -- Validate train ownership
     if not validateTrainOwnership(src, trainId) then
-        Core.NotifyRightTip(src, 'You do not own this train', 4000)
+        Core.NotifyRightTip(src, _U('notYourTrain'), 4000)
         return
     end
 
@@ -1235,7 +1425,7 @@ RegisterNetEvent('bcc-train:RenameTrain', function(trainId, newName)
         Core.NotifyRightTip(src, _U('trainRenamed'), 4000)
         DBG.Info(string.format('Player %s renamed train ID %d to: %s', character.charIdentifier, trainId, finalTrainName))
     else
-        Core.NotifyRightTip(src, 'Failed to rename train', 4000)
+        Core.NotifyRightTip(src, _U('failedRename'), 4000)
         DBG.Error(string.format('Failed to rename train ID %d for player %s', trainId, character.charIdentifier))
     end
 end)
@@ -1251,7 +1441,7 @@ Core.Callback.Register('bcc-train:DecTrainFuel', function(source, cb, trainid, t
 
     -- Validate train ownership
     if not validateTrainOwnership(src, trainid) then
-        Core.NotifyRightTip(src, 'You do not own this train', 4000)
+        Core.NotifyRightTip(src, _U('notYourTrain'), 4000)
         return cb(nil)
     end
 
@@ -1278,7 +1468,7 @@ Core.Callback.Register('bcc-train:DecTrainCond', function(source, cb, trainid, t
 
     -- Validate train ownership
     if not validateTrainOwnership(src, trainid) then
-        Core.NotifyRightTip(src, 'You do not own this train', 4000)
+        Core.NotifyRightTip(src, _U('notYourTrain'), 4000)
         return cb(nil)
     end
 
@@ -1305,7 +1495,7 @@ Core.Callback.Register('bcc-train:FuelTrain', function(source, cb, trainId, trai
 
     -- Validate train ownership
     if not validateTrainOwnership(src, trainId) then
-        Core.NotifyRightTip(src, 'You do not own this train', 4000)
+        Core.NotifyRightTip(src, _U('notYourTrain'), 4000)
         return cb(nil)
     end
 
@@ -1313,7 +1503,7 @@ Core.Callback.Register('bcc-train:FuelTrain', function(source, cb, trainId, trai
     local fuelCooldown = (Config.rateLimiting and Config.rateLimiting.fuelCooldown) or 30
     local canOperate, timeRemaining = checkOperationCooldown(src, 'fuel', fuelCooldown)
     if not canOperate then
-        Core.NotifyRightTip(src, string.format('Please wait %d seconds before fueling again', timeRemaining), 4000)
+        Core.NotifyRightTip(src, _U('pleaseWaitSeconds') .. ': ' .. tostring(timeRemaining) .. 's', 4000)
         return cb(nil)
     end
 
@@ -1349,7 +1539,7 @@ Core.Callback.Register('bcc-train:RepairTrain', function(source, cb, trainId, tr
 
     -- Validate train ownership
     if not validateTrainOwnership(src, trainId) then
-        Core.NotifyRightTip(src, 'You do not own this train', 4000)
+        Core.NotifyRightTip(src, _U('notYourTrain'), 4000)
         return cb(nil)
     end
 
@@ -1357,7 +1547,7 @@ Core.Callback.Register('bcc-train:RepairTrain', function(source, cb, trainId, tr
     local repairCooldown = (Config.rateLimiting and Config.rateLimiting.repairCooldown) or 45
     local canOperate, timeRemaining = checkOperationCooldown(src, 'repair', repairCooldown)
     if not canOperate then
-        Core.NotifyRightTip(src, string.format('Please wait %d seconds before repairing again', timeRemaining), 4000)
+        Core.NotifyRightTip(src, _U('pleaseWaitSeconds') .. ': ' .. tostring(timeRemaining) .. 's', 4000)
         return cb(nil)
     end
 
@@ -1461,7 +1651,7 @@ RegisterNetEvent('bcc-train:DeliveryPay', function(destination)
 
     -- Validate mission completion
     if not validateAndCompleteDeliveryMission(src, destination) then
-        Core.NotifyRightTip(src, 'Invalid mission completion attempt', 4000)
+        Core.NotifyRightTip(src, _U('invalidMissionComplete'), 4000)
         return
     end
 
@@ -1601,17 +1791,19 @@ RegisterNetEvent('bcc-train:DeliveryPay', function(destination)
 
     -- Notify player about moved items and remaining failures
     if #movedToTrain > 0 then
-        local msg = 'The following items were placed into your train inventory:'
+        local msg = _U('movedItemsToTrainHeader')
         for _, m in ipairs(movedToTrain) do
-            msg = msg .. string.format('\n%s x%d', m.item, m.quantity)
+            local label = getItemLabel(m.item)
+            msg = msg .. string.format('\n%s x%d', label, m.quantity)
         end
         Core.NotifyRightTip(src, msg, 8000)
     end
 
     if #stillFailed > 0 then
-        local msg = 'Could not award items due to inventory space:'
+        local msg = _U('couldNotAwardItemsHeader')
         for _, f in ipairs(stillFailed) do
-            msg = msg .. string.format('\n%s x%d', f.item, f.quantity)
+            local label = getItemLabel(f.item)
+            msg = msg .. string.format('\n%s x%d', label, f.quantity)
             DBG.Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=%s', tostring(src), tostring(f.item), tostring(f.quantity), tostring(f.reason)))
         end
         Core.NotifyRightTip(src, msg, 8000)
@@ -1650,14 +1842,14 @@ RegisterNetEvent('bcc-train:StartDeliveryMission', function(destination)
 
     -- Check if player already has an active mission
     if ActiveMissions[src] then
-        Core.NotifyRightTip(src, 'You already have an active mission', 4000)
+        Core.NotifyRightTip(src, _U('alreadyInMission'), 4000)
         return
     end
 
     if startDeliveryMission(src, destination) then
-        Core.NotifyRightTip(src, 'Delivery mission started', 4000)
+        Core.NotifyRightTip(src, _U('deliveryStarted'), 4000)
     else
-        Core.NotifyRightTip(src, 'Failed to start mission', 4000)
+        Core.NotifyRightTip(src, _U('deliveryStartFailed'), 4000)
     end
 end)
 

@@ -4,17 +4,17 @@ Config = {
     -----------------------------------------------------
 
     devMode = {
-        active = true -- Set true to view debug prints
+        active = true, -- Set true to view debug prints
     },
     -----------------------------------------------------
 
     -- Rate limiting configuration
     rateLimiting = {
-        enabled = true,           -- Set false to disable all rate limiting
-        fuelCooldown = 30,        -- Seconds between fuel operations
-        repairCooldown = 45,      -- Seconds between repair operations
-        lockpickCooldown = 10,    -- Seconds between lockpick attempts
-        lockpickBreakPenalty = 60 -- Additional seconds after breaking lockpick
+        enabled = true,            -- Set false to disable all rate limiting
+        fuelCooldown = 30,         -- Seconds between fuel operations
+        repairCooldown = 45,       -- Seconds between repair operations
+        lockpickCooldown = 10,     -- Seconds between lockpick attempts
+        lockpickBreakPenalty = 60, -- Additional seconds after breaking lockpick
     },
     -----------------------------------------------------
 
@@ -25,14 +25,14 @@ Config = {
         station   = 0x760A9C6F, -- Default: 0x760A9C6F [G]
         bridge    = 0x760A9C6F, -- Default: 0x760A9C6F [G]
         delivery  = 0x760A9C6F, -- Default: 0x760A9C6F [G]
-        inventory = 0xD8F73058  -- Default: 0xD8F73058 [U]
+        inventory = 0xD8F73058, -- Default: 0xD8F73058 [U]
     },
     -----------------------------------------------------
 
     webhook = {
         link = '',           -- Insert Webhook Link to Enable
         title = 'BCC-Train', -- Insert Webhook Title
-        avatar = ''          -- Insert Webhook Avatar
+        avatar = '',         -- Insert Webhook Avatar
     },
     -----------------------------------------------------
 
@@ -56,21 +56,28 @@ Config = {
     cruiseControl = true, -- Set true to Enable Cruise Control
     -----------------------------------------------------
 
+    -- Driving / ramp settings (tweak to change speed ramp feel)
+    driving = {
+        rampSteps = 16,      -- Number of steps used when ramping speed on/off
+        rampStepWait = 125,  -- Milliseconds to wait between each ramp step
+    },
+    -----------------------------------------------------
+
     -- Time in Minutes Before Player can Start Delivery After Successful Completion
     cooldown = {
-        delivery = 30
+        delivery = 30,
     },
     -----------------------------------------------------
 
     -- Train Fuel and Condition Items
     fuel = {
-        item = 'bagofcoal',      -- Item Name in the Database
-        itemName = 'Bag of Coal' -- Item Display Name
+        item = 'bagofcoal',       -- Item Name in the Database
+        itemName = 'Bag of Coal', -- Item Display Name
     },
 
     condition = {
-        item = 'trainoil',     -- Item Name in the Database
-        itemName = 'Train Oil' -- Item Display Name
+        item = 'trainoil',      -- Item Name in the Database
+        itemName = 'Train Oil', -- Item Display Name
     },
     -----------------------------------------------------
 
@@ -79,7 +86,7 @@ Config = {
         coords = vector3(492.01, 1774.41, 182.5), -- Coords of Location to Place Dynamite
         item = 'dynamite',                        -- Item Name in Database
         itemAmount = 2,                           -- Number of Items Needed
-        timer = 30                                -- Time in Seconds Before Explosion
+        timer = 30,                               -- Time in Seconds Before Explosion
     },
     -----------------------------------------------------
 
@@ -96,7 +103,7 @@ Config = {
         keytopress = 'B',     -- userandomkey must be false for this to work. Static key to press
         keycode = 66,         -- The JS keycode for the keytopress
         speed = 5,            -- How fast the orbiter grows
-        strict = true         -- if true, letting the timer run out counts as a failed attempt
+        strict = true,        -- if true, letting the timer run out counts as a failed attempt
     },
     -----------------------------------------------------
 
@@ -115,8 +122,8 @@ Config = {
         staticDegrees = {     -- Static degrees to use when randomDegrees is false
             90,               -- Stage 1 degree (0-360)
             180,              -- Stage 2 degree (0-360)
-            270               -- Stage 3 degree (0-360)
-        }
+            270,              -- Stage 3 degree (0-360)
+        },
     },
     -----------------------------------------------------
 
@@ -143,7 +150,35 @@ Config = {
             blipTime = 60000,                   -- How long the blip will stay for the job (miliseconds)
             blipDelay = 1000,                   -- Delay time before the job is notified (miliseconds)
             originText = 'Robbery alert sent!', -- Text displayed to the user who enacted the command
-            originTime = 4000                   -- The time the origintext displays (miliseconds)
+            originTime = 4000,                  -- The time the origintext displays (miliseconds)
+        },
+    },
+    -----------------------------------------------------
+
+    -- Train blip display options (controls how other players see trains on the map)
+    trainBlips = {
+        enabled = true,         -- Enable or disable sending train blip info to other players
+        nameMode = 'player',    -- 'player' = the owner's character name / 'standard' = a single fixed label (see `standardName`)
+        standardName = 'Train', -- When using 'standard', this string will be shown on the blip
+        sprite = -250506368,    -- Numerical ID for the blip icon
+        color = 'WHITE',        -- Key from `Config.BlipColors` (see bottom of file)
+
+        -- Network resolution: controls when the client tries to turn a server-tracked
+        -- train (network id) into a local, entity-attached blip.
+        resolutionRange = 400.0,     -- Distance (meters) from the train coords where the client will try to resolve the network entity
+        resolutionFallbackMs = 3000, -- Milliseconds to wait before forcing a resolution attempt even if the player is farther than `resolutionRange`
+
+        -- Permissions and behavior for the on-demand locator command `/showtrains`.
+        showTrains = {
+            blipDuration = 30,   -- How long (seconds) temporary locator blips last
+            jobsEnabled = false, -- Require a job check before allowing `/showtrains`
+            jobs = {             -- List of jobs that may use the command / ex. { name = 'police', grade = 0 }
+                { name = 'trainer', grade = 0 },
+            },
+            -- Temporary locator blip appearance
+            tempColor = 'BRIGHT_BLUE',    -- Key from Config.BlipColors for temporary locator blip
+            tempRadius = 60.0,            -- Radius (meters) for radius blip placed around train coords (0 to disable)
+            tempRadiusHash = -1282792512, -- Native hash used for radius blip
         },
     },
     -----------------------------------------------------
@@ -182,4 +217,5 @@ Config = {
         LIGHT_YELLOW3 = 'BLIP_MODIFIER_MP_COLOR_31',
         WHITE         = 'BLIP_MODIFIER_MP_COLOR_32'
     },
+    -----------------------------------------------------
 }

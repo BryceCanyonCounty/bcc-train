@@ -103,8 +103,13 @@ function DeliveryMission(station, presetDestination)
         local itemCheck = Core.Callback.TriggerAwait('bcc-train:CheckDeliveryItems', destination)
         if not itemCheck.hasItems then
             local missingText = _U('missingDeliveryItems')
+            -- Batch resolve labels for missing items
+            local ids = {}
+            for _, missing in ipairs(itemCheck.missingItems) do if missing and missing.item then ids[#ids+1] = missing.item end end
+            local labels = GetItemLabelsCached(ids)
             for _, missing in ipairs(itemCheck.missingItems) do
-                missingText = missingText .. string.format("\n%s: %d/%d", missing.item, missing.have, missing.needed)
+                local label = labels[missing.item] or GetItemLabelCached(missing.item)
+                missingText = missingText .. string.format("\n%s: %d/%d", label, missing.have, missing.needed)
             end
             Core.NotifyRightTip(missingText, 6000)
             return

@@ -11,6 +11,62 @@ EngineStarted, ForwardActive, BackwardActive = false, false, false
 PreviewTrain = nil
 SpawnedStation = nil
 
+-- Client-side cache for item labels to avoid repeated server RPCs
+ItemLabelCache = ItemLabelCache or {}
+
+-- Returns a human-friendly label for an item id, using a local cache and
+-- falling back to a server callback. Synchronous (uses TriggerAwait) but
+-- cheap after the first lookup.
+function GetItemLabelCached(itemId)
+    if not itemId then return tostring(itemId) end
+    if ItemLabelCache[itemId] then return ItemLabelCache[itemId] end
+    local ok, label = pcall(function()
+        return Core.Callback.TriggerAwait('bcc-train:GetItemLabel', itemId)
+    end)
+    if ok and label and label ~= '' then
+        ItemLabelCache[itemId] = label
+        return label
+    end
+    -- Fallback to raw id
+    ItemLabelCache[itemId] = tostring(itemId)
+    return ItemLabelCache[itemId]
+end
+
+-- Batch resolver: accepts a table/array of itemIds and returns a map itemId->label.
+-- Uses the local cache and only requests missing labels from the server in one RPC.
+function GetItemLabelsCached(itemIds)
+    if not itemIds or type(itemIds) ~= 'table' then return {} end
+    local toRequest = {}
+    local result = {}
+    for _, id in ipairs(itemIds) do
+        if ItemLabelCache[id] then
+            result[id] = ItemLabelCache[id]
+        else
+            table.insert(toRequest, id)
+        end
+    end
+
+    if #toRequest > 0 then
+        local ok, res = pcall(function()
+            return Core.Callback.TriggerAwait('bcc-train:GetItemLabels', toRequest)
+        end)
+        if ok and res and type(res) == 'table' then
+            for k, v in pairs(res) do
+                ItemLabelCache[k] = v
+                result[k] = v
+            end
+        else
+            -- fallback: mark requested ids as their raw ids
+            for _, id in ipairs(toRequest) do
+                ItemLabelCache[id] = tostring(id)
+                result[id] = tostring(id)
+            end
+        end
+    end
+
+    return result
+end
+
 -- Initialize random seed for better math.random usage
 math.randomseed(GetGameTimer() + GetRandomIntInRange(1, 1000))
 
@@ -105,7 +161,7 @@ AddEventHandler('bcc-train:ResetTrain', function()
         DeliveryBlip = nil
     end
 
-    TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, nil, TrainId, SpawnedStation)
+    TriggerServerEvent('bcc-train:UpdateTrainSpawnVar', false, nil, TrainId, SpawnedStation, nil)
     SpawnedStation = nil -- Reset the spawned station
     -- Notify local clients to clear driving menu state (keeps DrivingMenuOpened in sync)
     TriggerEvent('bcc-train:DrivingMenuClosed')

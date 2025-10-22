@@ -52,6 +52,7 @@ This is the best, full fledged train script for RedM! A multitude of features li
   - Delivery missions with configurable locations
   - Server-based delivery cooldown (persists through relog)
   - Dynamic mission selection based on train region
+  - Option to require items to start a mission
 
 - **Special Features**
   - Bacchus Bridge destruction with dynamite
@@ -117,11 +118,11 @@ bcc-train:migrate # Force database migration (if needed)
 - `lockpickItem`: Array of items that can be used as lockpicks
 - Lockpick system settings (difficulty, attempts, random degrees)
 - Key bindings and webhook settings
-
+- `trainBlips`: global train blip settings (enable, nameMode, standardName, sprite, color)
+  
 ### Train Configuration (`configs/trains.lua`)
 
 - Individual train models with hex hash keys
-- Table-based pricing structure: `{cash = X, gold = Y}`
 - Categorized trains: Cargo, Passenger, Mixed, Special
 - Per-train fuel, condition, and inventory settings
 
@@ -138,6 +139,15 @@ bcc-train:migrate # Force database migration (if needed)
 - Press `U` to access train inventory
 - Press `G` at stations to open modern train shop menu
 - Press `G` at Bacchus Bridge to destroy it (requires dynamite)
+- Use `/showtrains` to create temporary coordinate blips for active trains
+
+### Temporary Train Locator (`/showtrains`)
+
+Players may find it useful to quickly locate active trains on the map. The `/showtrains` client command will create temporary coordinate blips for known spawned trains for a short duration.
+
+- Usage: `/showtrains` (client-side command)
+- Duration: Controlled by `Config.trainBlips.showTrains.blipDuration` (default: 10 seconds)
+- Permission: A job-based permission check can be enabled in `configs/config.lua` under `Config.trainBlips.showTrains.jobsEnabled` with allowed entries in `Config.trainBlips.showTrains.jobs` (objects with `name` and `grade`).
 
 ### Train Shop System
 

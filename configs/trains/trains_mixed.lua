@@ -11,7 +11,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -53,7 +53,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -95,7 +95,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -137,7 +137,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -179,7 +179,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -221,7 +221,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -263,7 +263,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -305,7 +305,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -347,7 +347,7 @@ Mixed = {
             cash = 3950,         -- Price in Cash
             gold = 190           -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -389,7 +389,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -431,7 +431,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -473,7 +473,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -515,7 +515,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -557,7 +557,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -599,7 +599,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -641,7 +641,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -683,7 +683,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -725,7 +725,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -767,7 +767,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368
@@ -809,7 +809,7 @@ Mixed = {
             cash = 3950,          -- Price in Cash
             gold = 190            -- Price in Gold
         },
-        blip = {
+        blip = {                 -- blip settings for train owner only
             show   = true,       -- Show Blip for Train Location
             name   = 'Train',    -- Name of Blip on the Map
             sprite = -250506368, -- Default: -250506368

@@ -4,7 +4,7 @@ DeliveryLocations = {
         name = "Heartland Oil Fields",
         trainCoords = vector3(482.21, 655.46, 115.67),    -- Stop Train for Delivery
         deliveryCoords = vector3(469.27, 669.22, 117.39), -- Player Delivery Coords
-        requireItem = true,                               -- Require Item to Start Mission
+        requireItem = false,                              -- Require Item to Start Mission
         items = {                                         -- Items Required to Start Mission (ALL items listed are required to start)
             { item = 'apple', quantity = 1 },
         },
@@ -12,7 +12,7 @@ DeliveryLocations = {
             cash = 30,
             gold = 2,
             items = { -- If cannot carry items they will be sent to train inventory
-                { item = 'apple',   quantity = 30 },
+                { item = 'apple',   quantity = 3 },
                 { item = 'carrots', quantity = 2 },
             }
         },
@@ -27,7 +27,7 @@ DeliveryLocations = {
         name = "East Hanover",
         trainCoords = vector3(2231.4, 657.21, 93.83),    -- Stop Train for Delivery
         deliveryCoords = vector3(2226.6, 644.73, 93.33), -- Player Delivery Coords
-        requireItem = true,                              -- Require Item to Start Mission
+        requireItem = false,                             -- Require Item to Start Mission
         items = {                                        -- Items Required to Start Mission (ALL items listed are required to start)
             { item = 'apple', quantity = 1 },
         },
@@ -35,7 +35,7 @@ DeliveryLocations = {
             cash = 30,
             gold = 2,
             items = {
-                { item = 'apple',   quantity = 30 },
+                { item = 'apple',   quantity = 3 },
                 { item = 'carrots', quantity = 2 },
             }
         },
@@ -50,7 +50,7 @@ DeliveryLocations = {
         name = "St. Denis Station",
         trainCoords = vector3(2712.19, -1467.63, 45.75),    -- Stop Train for Delivery
         deliveryCoords = vector3(2713.09, -1491.56, 45.97), -- Player Delivery Coords
-        requireItem = true,                                 -- Require Item to Start Mission
+        requireItem = false,                                -- Require Item to Start Mission
         items = {                                           -- Items Required to Start Mission (ALL items listed are required to start)
             { item = 'apple', quantity = 1 },
         },
@@ -58,7 +58,7 @@ DeliveryLocations = {
             cash = 30,
             gold = 2,
             items = {
-                { item = 'apple',   quantity = 30 },
+                { item = 'apple',   quantity = 3 },
                 { item = 'carrots', quantity = 2 },
             }
         },
@@ -73,7 +73,7 @@ DeliveryLocations = {
         name = "Armadillo Station",
         trainCoords = vector3(-3749.8, -2635.28, -13.87),    -- Stop Train for Delivery
         deliveryCoords = vector3(-3735.51, -2620.4, -13.27), -- Player Delivery Coords
-        requireItem = true,                                  -- Require Item to Start Mission
+        requireItem = false,                                 -- Require Item to Start Mission
         items = {                                            -- Items Required to Start Mission (ALL items listed are required to start)
             { item = 'apple', quantity = 1 },
         },
@@ -81,7 +81,7 @@ DeliveryLocations = {
             cash = 30,
             gold = 2,
             items = {
-                { item = 'apple',   quantity = 30 },
+                { item = 'apple',   quantity = 3 },
                 { item = 'carrots', quantity = 2 },
             }
         },

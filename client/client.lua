@@ -845,6 +845,27 @@ CreateThread(function()
     end
 end)
 
+RegisterCommand('trainEnter', function()
+    if MyTrain == 0 then
+        Core.NotifyRightTip(_U('noBoat'), 4000)
+        return
+    end
+
+    if not Citizen.InvokeNative(0xE052C1B1CAA4ECE4, MyTrain, -1) then return end -- IsVehicleSeatFree
+
+    local playerPed = PlayerPedId()
+    local callDist = #(GetEntityCoords(playerPed) - GetEntityCoords(MyTrain))
+    if callDist < 50 then
+        DoScreenFadeOut(500)
+        Wait(500)
+        SetPedIntoVehicle(playerPed, MyTrain, -1)
+        Wait(500)
+        DoScreenFadeIn(500)
+    else
+        Core.NotifyRightTip(_U('tooFar'), 4000)
+    end
+end, false)
+
 -- Cleanup
 AddEventHandler('onResourceStop', function(resourceName)
     if (GetCurrentResourceName() ~= resourceName) then

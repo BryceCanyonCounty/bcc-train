@@ -8,23 +8,36 @@ local switched = false
 -- persist the selected driving speed across menu redraws
 DrivingMenuSpeed = DrivingMenuSpeed or 0
 local function TrackSwitch(toggle)
-    local trackModels = {
-        { model = 'FREIGHT_GROUP' },
-        { model = 'TRAINS3' },
-        { model = 'BRAITHWAITES2_TRACK_CONFIG' },
-        { model = 'TRAINS_OLD_WEST01' },
-        { model = 'TRAINS_OLD_WEST03' },
-        { model = 'TRAINS_NB1' },
-        { model = 'TRAINS_INTERSECTION1_ANN' },
+    local tracks = {
+        { trackConfig = 'BRAITHWAITES2_TRACK_CONFIG' },
+        { trackConfig = 'FREIGHT_GROUP' },
+        { trackConfig = 'FREIGHT_NB1_INTER' },
+        { trackConfig = 'TRAINS_INTERSECTION1_3' },
+        { trackConfig = 'TRAINS_INTERSECTION1_ANN' },
+        { trackConfig = 'TRAINS_INTERSECTION1_APP' },
+        { trackConfig = 'TRAINS_INTERSECTION2_3' },
+        { trackConfig = 'TRAINS_INTERSECTION2_ANN' },
+        { trackConfig = 'TRAINS_INTERSECTION3_COR' },
+        { trackConfig = 'TRAINS_NB1' },
+        { trackConfig = 'TRAINS_NB2' },
+        { trackConfig = 'TRAINS_NB3' },
+        { trackConfig = 'TRAINS_OLD_WEST_INTERSECTION01' },
+        { trackConfig = 'TRAINS_OLD_WEST_INTERSECTION02' },
+        { trackConfig = 'TRAINS_OLD_WEST01' },
+        { trackConfig = 'TRAINS_OLD_WEST02' },
+        { trackConfig = 'TRAINS_OLD_WEST03' },
+        { trackConfig = 'TRAINS_ROB3' },
+        { trackConfig = 'TRAINS3' },
     }
-    local counter = 0
+    local junctionIndex = 0
     repeat
-    for _, v in pairs(trackModels) do
-        local trackHash = joaat(v.model)
-        Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, counter, toggle) -- SetTrainTrackJunctionSwitch
+    for index, track in pairs(tracks) do
+        local trackHash = joaat(track.trackConfig)
+        Citizen.InvokeNative(0xE6C5E2125EB210C1, trackHash, junctionIndex, toggle) -- SetTrainTrackJunctionSwitch
+        Citizen.InvokeNative(0x3ABFA128F5BF5A70, trackHash, junctionIndex, toggle)
     end
-    counter = counter + 1
-    until counter >= 25
+    junctionIndex = junctionIndex + 1
+    until junctionIndex >= 25
 end
 
 local function MaxSpeedCalc(speed)

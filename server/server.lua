@@ -177,18 +177,29 @@ AddEventHandler('playerDropped', function(reason)
     cleanupDisconnectedPlayer(source)
 end)
 
--- Item helpers (delegates to server/item_utils.lua via global BccTrainItemUtils)
-local function fetchItemInfo(itemId)
-    if BccTrainItemUtils and BccTrainItemUtils.fetchItemInfo then
-        return BccTrainItemUtils.fetchItemInfo(itemId)
-    end
-    return nil
-end
-
+-- Item helpers
 local function getItemLabel(itemId)
-    if BccTrainItemUtils and BccTrainItemUtils.getItemLabel then
-        return BccTrainItemUtils.getItemLabel(itemId)
+    -- Check delivery config for item labels
+    if DeliveryLocations then
+        for _, location in pairs(DeliveryLocations) do
+            if location.items then
+                for _, item in ipairs(location.items) do
+                    if item.item == itemId and item.label then
+                        return item.label
+                    end
+                end
+            end
+            if location.rewards and location.rewards.items then
+                for _, item in ipairs(location.rewards.items) do
+                    if item.item == itemId and item.label then
+                        return item.label
+                    end
+                end
+            end
+        end
     end
+    
+    -- Fallback to item ID
     return tostring(itemId)
 end
 
@@ -448,9 +459,13 @@ local function getItemData(itemId)
         return out
     end
 
-    local info = fetchItemInfo(itemId)
-    if info and type(info) == 'table' then
-        return info
+    -- Use vorp_inventory export
+    if exports.vorp_inventory and exports.vorp_inventory.getItem then
+        local ok, info = pcall(function() return exports.vorp_inventory:getItem(itemId) end)
+        if ok and info then
+            info.id = info.id or itemId
+            return info
+        end
     end
 
     -- Return minimal table as fallback
@@ -1690,118 +1705,10 @@ RegisterNetEvent('bcc-train:DeliveryPay', function(destination)
         end
     end
 
-    -- Attempt to put failed awards into the player's spawned train inventory (if any)
-    local stillFailed = {}
-    local movedToTrain = {}
+    -- Notify player about failed awards (items that couldn't fit in inventory)
     if #failedAwards > 0 then
-        -- Find a spawned train owned by this character
-        local targetTrain = nil
-        for _, train in ipairs(ActiveTrains) do
-            -- Check DB ownership for this train id
-            local trainData = MySQL.query.await('SELECT * FROM `bcc_player_trains` WHERE `trainid` = ?', { train.id })
-            if trainData and #trainData > 0 and trainData[1].charidentifier == character.charIdentifier then
-                -- Check entity exists
-                local ent = NetworkGetEntityFromNetworkId(train.netId)
-                if ent and DoesEntityExist(ent) then
-                    targetTrain = train
-                    break
-                end
-            end
-        end
-
-        if targetTrain then
-            local invName = 'Train_' .. tostring(targetTrain.id) .. '_bcc-traininv'
-            local registered = false
-            if exports.vorp_inventory and exports.vorp_inventory.isCustomInventoryRegistered then
-                local ok, res = pcall(function() return exports.vorp_inventory:isCustomInventoryRegistered(invName) end)
-                if ok and res then registered = true end
-            end
-
-            if registered then
-                -- Prepare items table in the format expected by addItemsToCustomInventory
-                local itemsToAdd = {}
-                for _, f in ipairs(failedAwards) do
-                    table.insert(itemsToAdd, { name = f.item, amount = f.quantity })
-                end
-
-                local success = false
-                -- Try synchronous return first
-                if exports.vorp_inventory and exports.vorp_inventory.addItemsToCustomInventory then
-                    local ok, res = pcall(function()
-                        return exports.vorp_inventory:addItemsToCustomInventory(invName, itemsToAdd, character.charIdentifier)
-                    end)
-                    if ok and res then
-                        success = true
-                    end
-                end
-
-                if success then
-                    for _, f in ipairs(failedAwards) do
-                        table.insert(movedToTrain, f)
-                        DBG.Info(string.format('Moved unawarded item to train inventory: src=%s train=%s item=%s qty=%s', tostring(src), tostring(targetTrain.id), tostring(f.item), tostring(f.quantity)))
-                    end
-                else
-                    -- Try callback-style invocation if available
-                    if exports.vorp_inventory and exports.vorp_inventory.addItemsToCustomInventory then
-                        local ok, _ = pcall(function()
-                            exports.vorp_inventory:addItemsToCustomInventory(invName, itemsToAdd, character.charIdentifier, function(result)
-                                if result then
-                                    for _, f in ipairs(failedAwards) do
-                                        table.insert(movedToTrain, f)
-                                        DBG.Info(string.format('Moved unawarded item to train inventory (callback): src=%s train=%s item=%s qty=%s', tostring(src), tostring(targetTrain.id), tostring(f.item), tostring(f.quantity)))
-                                    end
-                                else
-                                    for _, f in ipairs(failedAwards) do
-                                        table.insert(stillFailed, f)
-                                        DBG.Warning(string.format('Could not move item to train inventory (callback): src=%s train=%s item=%s qty=%s', tostring(src), tostring(targetTrain.id), tostring(f.item), tostring(f.quantity)))
-                                    end
-                                end
-                            end)
-                        end)
-                        if not ok then
-                            -- pcall failed; mark all as still failed
-                            for _, f in ipairs(failedAwards) do
-                                table.insert(stillFailed, f)
-                                DBG.Warning(string.format('Could not move item to train inventory (pcall failed): src=%s train=%s item=%s qty=%s', tostring(src), tostring(targetTrain.id), tostring(f.item), tostring(f.quantity)))
-                            end
-                        end
-                    else
-                        -- If API doesn't exist, mark all as still failed
-                        for _, f in ipairs(failedAwards) do
-                            table.insert(stillFailed, f)
-                            DBG.Warning(string.format('addItemsToCustomInventory not available; cannot move item to train inventory: src=%s item=%s qty=%s', tostring(src), tostring(f.item), tostring(f.quantity)))
-                        end
-                    end
-                end
-            else
-                -- No registered train inventory found; nothing moved
-                for _, f in ipairs(failedAwards) do
-                    table.insert(stillFailed, f)
-                    DBG.Warning(string.format('Train inventory not registered for player %s train=%s; cannot move item %s x%s', tostring(src), tostring(targetTrain.id), tostring(f.item), tostring(f.quantity)))
-                end
-            end
-        else
-            -- No spawned train found for player
-            for _, f in ipairs(failedAwards) do
-                table.insert(stillFailed, f)
-                DBG.Info(string.format('No spawned train owned by player %s to move item %s x%s', tostring(src), tostring(f.item), tostring(f.quantity)))
-            end
-        end
-    end
-
-    -- Notify player about moved items and remaining failures
-    if #movedToTrain > 0 then
-        local msg = _U('movedItemsToTrainHeader')
-        for _, m in ipairs(movedToTrain) do
-            local label = getItemLabel(m.item)
-            msg = msg .. string.format('\n%s x%d', label, m.quantity)
-        end
-        Core.NotifyRightTip(src, msg, 8000)
-    end
-
-    if #stillFailed > 0 then
         local msg = _U('couldNotAwardItemsHeader')
-        for _, f in ipairs(stillFailed) do
+        for _, f in ipairs(failedAwards) do
             local label = getItemLabel(f.item)
             msg = msg .. string.format('\n%s x%d', label, f.quantity)
             DBG.Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=%s', tostring(src), tostring(f.item), tostring(f.quantity), tostring(f.reason)))

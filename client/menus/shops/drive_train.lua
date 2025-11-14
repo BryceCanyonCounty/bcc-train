@@ -41,7 +41,9 @@ local function TrackSwitch(toggle)
 end
 
 local function MaxSpeedCalc(speed)
-    local setMaxSpeed = math.min(speed + 0.1, 29.9)
+    -- Cap speed at 29 even if 30 is selected on the slider
+    local cappedSpeed = math.min(speed, 29)
+    local setMaxSpeed = math.min(cappedSpeed + 0.1, 29.9)
     Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, setMaxSpeed) -- SetTrainMaxSpeed
 end
 
@@ -139,7 +141,7 @@ local function startCruise()
         -- Immediately hold the captured DrivingMenuSpeed when cruise is toggled
         -- on; do not perform a ramp-up. This preserves the player's current
         -- speed exactly when they engage cruise.
-        local targetMag = DrivingMenuSpeed or 0
+        local targetMag = math.min(DrivingMenuSpeed or 0, 29) -- Cap at 29 even if display shows 30
         if targetMag > 0 and MyTrain and MyTrain ~= 0 then
             CruiseAppliedMag = targetMag
             ApplyNativeTrainSpeed((CruiseDirection or 1) * targetMag)
@@ -169,8 +171,8 @@ local function startCruise()
                 CruiseDirection = -1
             end
 
-            -- target magnitude is the user-selected DrivingMenuSpeed
-            local targetMag = DrivingMenuSpeed or 0
+            -- target magnitude is the user-selected DrivingMenuSpeed, capped at 29
+            local targetMag = math.min(DrivingMenuSpeed or 0, 29)
             -- smooth the applied magnitude towards target
             CruiseAppliedMag = CruiseAppliedMag + (targetMag - CruiseAppliedMag) * smoothFactor
 
@@ -257,7 +259,7 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
         itemHeight = '1.5vh',
         type = 'slider',
         min = 0,
-        max = trainCfg.maxSpeed,
+        max = math.min(trainCfg.maxSpeed, 30),
         hop = 1
     })
 
@@ -314,12 +316,15 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
                     end
                     if signedSpeed > 0.01 then
                         CruiseDirection = 1
-                        DrivingMenuSpeed = math.max(0, math.min(math.floor(signedSpeed * 100) / 100, trainCfg.maxSpeed or 10))
+                        local detectedSpeed = math.floor(signedSpeed * 100) / 100
+                        -- If speed is 29+, display as 30 for UI
+                        DrivingMenuSpeed = detectedSpeed >= 29 and math.min(trainCfg.maxSpeed or 10, 30) or math.max(0, math.min(detectedSpeed, math.min(trainCfg.maxSpeed or 10, 30)))
                     elseif signedSpeed < -0.01 then
                         CruiseDirection = -1
-                        DrivingMenuSpeed = math.max(0, math.min(math.floor(math.abs(signedSpeed) * 100) / 100, trainCfg.maxSpeed or 10))
+                        local detectedSpeed = math.floor(math.abs(signedSpeed) * 100) / 100
+                        -- If speed is 29+, display as 30 for UI
+                        DrivingMenuSpeed = detectedSpeed >= 29 and math.min(trainCfg.maxSpeed or 10, 30) or math.max(0, math.min(detectedSpeed, math.min(trainCfg.maxSpeed or 10, 30)))
                     end
-                    -- (previously notified player of captured cruise speed; notification removed)
                     -- set compatibility flags used elsewhere
                     ForwardActive = (CruiseDirection == 1)
                     BackwardActive = (CruiseDirection == -1)
@@ -392,13 +397,19 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
                     Core.NotifyRightTip(_U('checkTrain'), 4000)
                 end
             end,
-            -- fuel and condition entries use the 'fuel' and 'repair' handlers respectively
         }
         if selectedOption[data.current.value] then
             selectedOption[data.current.value]()
         else --has to be done this way to get a vector menu option
-            DrivingMenuSpeed = data.current.value
-            MaxSpeedCalc(DrivingMenuSpeed)
+            -- Check if trying to change speed from 0 without engine started
+            if not EngineStarted and data.current.value > 0 then
+                Core.NotifyRightTip(_U('engineMustBeStarted'), 4000)
+                DrivingMenuSpeed = 0
+                DrivingMenu(trainCfg, myTrainData, false)
+            else
+                DrivingMenuSpeed = data.current.value
+                MaxSpeedCalc(DrivingMenuSpeed)
+            end
         end
     end)
 end

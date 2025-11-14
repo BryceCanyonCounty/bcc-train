@@ -58,8 +58,8 @@ Config = {
 
     -- Driving / ramp settings (tweak to change speed ramp feel)
     driving = {
-        rampSteps = 16,      -- Number of steps used when ramping speed on/off
-        rampStepWait = 125,  -- Milliseconds to wait between each ramp step
+        rampSteps = 16,      -- Default: 16 / Number of steps used when ramping speed on/off
+        rampStepWait = 125,  -- Default: 125 / Milliseconds to wait between each ramp step
     },
     -----------------------------------------------------
 
@@ -103,7 +103,7 @@ Config = {
         keytopress = 'B',     -- userandomkey must be false for this to work. Static key to press
         keycode = 66,         -- The JS keycode for the keytopress
         speed = 5,            -- How fast the orbiter grows
-        strict = true,        -- if true, letting the timer run out counts as a failed attempt
+        strict = false,        -- if true, letting the timer run out counts as a failed attempt
     },
     -----------------------------------------------------
 

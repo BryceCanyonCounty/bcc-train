@@ -107,16 +107,28 @@ function DeliveryMissionConfirmation(station)
         })
     end
 
-    -- Items (each on its own line) - batch resolve labels to avoid multiple RPCs
+    -- Items (each on its own line). If a label is provided in the rewards config use it
+    -- otherwise batch-resolve via the cached RPC to avoid multiple calls.
     if rewards.items and #rewards.items > 0 then
-        local ids = {}
+        -- Determine which ids still need resolution
+        local idsToResolve = {}
+        local needResolve = false
         for _, r in ipairs(rewards.items) do
-            if r and r.item then ids[#ids+1] = r.item end
+            if r and r.item and not r.label then
+                idsToResolve[#idsToResolve+1] = r.item
+                needResolve = true
+            end
         end
-        local labels = GetItemLabelsCached(ids)
+
+        local resolved = {}
+        if needResolve then
+            -- We no longer call the server for labels here; fall back to raw id if missing
+            for _, id in ipairs(idsToResolve) do resolved[id] = tostring(id) end
+        end
+
         for _, r in ipairs(rewards.items) do
             if r and r.item and r.quantity then
-                local label = labels[r.item] or GetItemLabelCached(r.item)
+                local label = r.label or resolved[r.item] or tostring(r.item)
                 ConfirmationPage:RegisterElement('textdisplay', {
                     value = string.format('• %sx %s', tostring(r.quantity), tostring(label)),
                     slot = 'content',
@@ -156,12 +168,8 @@ function DeliveryMissionConfirmation(station)
                 end
             end
 
-            -- Batch resolve labels for required items
-            local reqIds = {}
-            for _, requiredItem in ipairs(destination.items) do
-                if requiredItem and requiredItem.item then reqIds[#reqIds+1] = requiredItem.item end
-            end
-            local reqLabels = GetItemLabelsCached(reqIds)
+            -- Prefer labels configured on each required item
+            local reqLabels = {}
             for _, requiredItem in ipairs(destination.items) do
                 -- Validate requiredItem structure
                 if not requiredItem or not requiredItem.item or not requiredItem.quantity then
@@ -176,7 +184,7 @@ function DeliveryMissionConfirmation(station)
                 local hasItem = haveCount >= needCount
                 local color = hasItem and '#E0E0E0' or '#FF6B6B'
 
-                local reqLabel = reqLabels[requiredItem.item] or GetItemLabelCached(requiredItem.item)
+                local reqLabel = requiredItem.label or reqLabels[requiredItem.item] or tostring(requiredItem.item)
                 ConfirmationPage:RegisterElement('textdisplay', {
                     value = string.format('• %s: %d/%d', reqLabel, haveCount, needCount),
                     slot = 'content',

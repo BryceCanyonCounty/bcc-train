@@ -6,14 +6,14 @@ DeliveryLocations = {
         deliveryCoords = vector3(469.27, 669.22, 117.39), -- Player Delivery Coords
         requireItem = false,                              -- Require Item to Start Mission
         items = {                                         -- Items Required to Start Mission (ALL items listed are required to start)
-            { item = 'apple', quantity = 1 },
+            { item = 'apple', label = "Apple", quantity = 1 },
         },
         rewards = { -- Rewards for Completing Mission
             cash = 30,
             gold = 2,
             items = { -- If cannot carry items they will be sent to train inventory
-                { item = 'apple',   quantity = 3 },
-                { item = 'carrots', quantity = 2 },
+                { item = 'apple',   label = "Apple",  quantity = 3 },
+                { item = 'carrots', label = "Carrot", quantity = 2 },
             }
         },
         outWest = false, -- Set false if This is Not in the Desert/Western Part of the Map
@@ -29,14 +29,14 @@ DeliveryLocations = {
         deliveryCoords = vector3(2226.6, 644.73, 93.33), -- Player Delivery Coords
         requireItem = false,                             -- Require Item to Start Mission
         items = {                                        -- Items Required to Start Mission (ALL items listed are required to start)
-            { item = 'apple', quantity = 1 },
+            { item = 'apple', label = "Apple", quantity = 1 },
         },
         rewards = { -- Rewards for Completing Mission
             cash = 30,
             gold = 2,
             items = {
-                { item = 'apple',   quantity = 3 },
-                { item = 'carrots', quantity = 2 },
+                { item = 'apple',   label = "Apple",  quantity = 3 },
+                { item = 'carrots', label = "Carrot", quantity = 2 },
             }
         },
         outWest = false, -- Set false if This is Not in the Desert/Western Part of the Map
@@ -52,14 +52,14 @@ DeliveryLocations = {
         deliveryCoords = vector3(2713.09, -1491.56, 45.97), -- Player Delivery Coords
         requireItem = false,                                -- Require Item to Start Mission
         items = {                                           -- Items Required to Start Mission (ALL items listed are required to start)
-            { item = 'apple', quantity = 1 },
+            { item = 'apple', label = "Apple", quantity = 1 },
         },
         rewards = { -- Rewards for Completing Mission
             cash = 30,
             gold = 2,
             items = {
-                { item = 'apple',   quantity = 3 },
-                { item = 'carrots', quantity = 2 },
+                { item = 'apple',   label = "Apple",  quantity = 3 },
+                { item = 'carrots', label = "Carrot", quantity = 2 },
             }
         },
         outWest = false, -- Set false if This is Not in the Desert/Western Part of the Map
@@ -75,14 +75,14 @@ DeliveryLocations = {
         deliveryCoords = vector3(-3735.51, -2620.4, -13.27), -- Player Delivery Coords
         requireItem = false,                                 -- Require Item to Start Mission
         items = {                                            -- Items Required to Start Mission (ALL items listed are required to start)
-            { item = 'apple', quantity = 1 },
+            { item = 'apple', label = "Apple", quantity = 1 },
         },
         rewards = { -- Rewards for Completing Mission
             cash = 30,
             gold = 2,
             items = {
-                { item = 'apple',   quantity = 3 },
-                { item = 'carrots', quantity = 2 },
+                { item = 'apple',   label = "Apple",  quantity = 3 },
+                { item = 'carrots', label = "Carrot", quantity = 2 },
             }
         },
         outWest = true, -- Set false if This is Not in the Desert/Western Part of the Map

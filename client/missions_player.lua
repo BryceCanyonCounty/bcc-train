@@ -19,8 +19,6 @@ AddEventHandler('bcc-train:PlayerDelivery', function(destination)
                 Wait(500)
                 MiniGame.Start('skillcheck', Config.minigame, function(result)
                     if result.passed then
-                        local cash = (destination.rewards and destination.rewards.cash) or 0
-                        Core.NotifyRightTip(_U('deliveryDone') .. cash, 4000)
                         TriggerServerEvent('bcc-train:DeliveryPay', destination)
                         TriggerServerEvent('bcc-train:SetPlayerCooldown', 'delivery')
                     else

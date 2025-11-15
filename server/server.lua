@@ -94,7 +94,20 @@ local function checkOperationCooldown(source, operation, cooldownSeconds)
         return false
     end
 
-    local playerKey = tostring(source)
+    -- Get character identifier for proper cooldown tracking
+    local user = Core.getUser(source)
+    if not user then
+        DBG.Warning(string.format('Could not get user for cooldown check: source=%s', tostring(source)))
+        return false
+    end
+
+    local character = user.getUsedCharacter
+    if not character then
+        DBG.Warning('Could not get character for cooldown check')
+        return false
+    end
+
+    local playerKey = tostring(character.charIdentifier)
     local currentTime = os.time()
 
     if not OperationCooldowns[playerKey] then
@@ -122,7 +135,7 @@ local function cleanupExpiredCooldowns()
     local currentTime = os.time()
     local cleanedCount = 0
 
-    for playerKey, operations in pairs(OperationCooldowns) do
+    for charIdentifier, operations in pairs(OperationCooldowns) do
         for operation, expireTime in pairs(operations) do
             if expireTime <= currentTime then
                 operations[operation] = nil
@@ -130,9 +143,9 @@ local function cleanupExpiredCooldowns()
             end
         end
 
-        -- Remove empty player entries
+        -- Remove empty character entries
         if next(operations) == nil then
-            OperationCooldowns[playerKey] = nil
+            OperationCooldowns[charIdentifier] = nil
         end
     end
 
@@ -153,22 +166,32 @@ end)
 
 -- Cleanup disconnected players from tracking tables
 local function cleanupDisconnectedPlayer(source)
-    local playerKey = tostring(source)
+    -- Get character identifier before user disconnects
+    local user = Core.getUser(source)
+    local charIdentifier = nil
+    if user then
+        local character = user.getUsedCharacter
+        if character then
+            charIdentifier = character.charIdentifier
+        end
+    end
 
     -- Clean up tracking tables
     if LockpickAttempts[source] then
         LockpickAttempts[source] = nil
     end
 
-    if OperationCooldowns[playerKey] then
-        OperationCooldowns[playerKey] = nil
+    -- Clean up operation cooldowns by character identifier if available
+    if charIdentifier and OperationCooldowns[tostring(charIdentifier)] then
+        OperationCooldowns[tostring(charIdentifier)] = nil
     end
 
     if ActiveMissions[source] then
         ActiveMissions[source] = nil
     end
 
-    DBG.Info(string.format('Cleaned up tracking data for disconnected player: %s', tostring(source)))
+    DBG.Info(string.format('Cleaned up tracking data for disconnected player: src=%s char=%s', 
+        tostring(source), tostring(charIdentifier or 'unknown')))
 end
 
 -- Handle player disconnection
@@ -176,32 +199,6 @@ AddEventHandler('playerDropped', function(reason)
     local source = source
     cleanupDisconnectedPlayer(source)
 end)
-
--- Item helpers
-local function getItemLabel(itemId)
-    -- Check delivery config for item labels
-    if DeliveryLocations then
-        for _, location in pairs(DeliveryLocations) do
-            if location.items then
-                for _, item in ipairs(location.items) do
-                    if item.item == itemId and item.label then
-                        return item.label
-                    end
-                end
-            end
-            if location.rewards and location.rewards.items then
-                for _, item in ipairs(location.rewards.items) do
-                    if item.item == itemId and item.label then
-                        return item.label
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Fallback to item ID
-    return tostring(itemId)
-end
 
 -- Mission tracking functions
 local function startDeliveryMission(source, destination)
@@ -225,7 +222,7 @@ local function startDeliveryMission(source, destination)
         for _, requiredItem in ipairs(destination.items) do
             local itemCount = exports.vorp_inventory:getItemCount(source, nil, requiredItem.item)
             if itemCount < requiredItem.quantity then
-                local itemLabel = getItemLabel(requiredItem.item)
+                local itemLabel = requiredItem.label or tostring(requiredItem.item)
                 Core.NotifyRightTip(source, _U('needItemsForDelivery') .. ': ' .. tostring(requiredItem.quantity) .. ' x ' .. tostring(itemLabel), 4000)
                 return false
             end
@@ -261,9 +258,30 @@ local function validateAndCompleteDeliveryMission(source, destination)
         return false
     end
 
+    -- Get current character for validation
+    local user = Core.getUser(source)
+    if not user then
+        DBG.Error(string.format('User not found for source: %s', tostring(source)))
+        return false
+    end
+
+    local character = user.getUsedCharacter
+    if not character then
+        DBG.Error('Character not found for user')
+        return false
+    end
+
     local mission = ActiveMissions[source]
     if not mission then
         DBG.Warning(string.format('No active mission found for player %s', tostring(source)))
+        return false
+    end
+
+    -- Verify the character attempting to complete is the same one that started the mission
+    if mission.charIdentifier ~= character.charIdentifier then
+        DBG.Warning(string.format('Character mismatch: mission started by %s but completion attempted by %s', 
+            tostring(mission.charIdentifier), tostring(character.charIdentifier)))
+        Core.NotifyRightTip(source, _U('notYourMission'), 4000)
         return false
     end
 
@@ -281,13 +299,15 @@ local function validateAndCompleteDeliveryMission(source, destination)
     local maxMissionTime = 3600 -- 1 hour maximum mission time
     if os.time() - mission.startTime > maxMissionTime then
         DBG.Warning(string.format('Mission expired for player %s', tostring(source)))
+        Core.NotifyRightTip(source, _U('missionExpired'), 4000)
         ActiveMissions[source] = nil
         return false
     end
 
     -- Mark mission as completed
     mission.completed = true
-    DBG.Info(string.format('Validated delivery mission completion for player %s', tostring(source)))
+    DBG.Info(string.format('Validated delivery mission completion for player %s (char: %s)', 
+        tostring(source), tostring(character.charIdentifier)))
     return true
 end
 
@@ -427,24 +447,6 @@ Core.Callback.Register('bcc-train:CheckJob', function(source, cb, shop)
 
     DBG.Success('User has the required job and grade.')
     cb(true)
-end)
-
--- Helper: get human-friendly label for an item from the `items` DB table.
--- Expose a simple callback so clients can resolve labels without running DB queries locally
-Core.Callback.Register('bcc-train:GetItemLabel', function(source, cb, itemId)
-    cb(getItemLabel(itemId))
-end)
-
--- Batch resolver for multiple item ids. Returns a map { itemId = label }
-Core.Callback.Register('bcc-train:GetItemLabels', function(source, cb, items)
-    if not items or type(items) ~= 'table' then
-        return cb({})
-    end
-    local out = {}
-    for _, id in ipairs(items) do
-        out[id] = getItemLabel(id)
-    end
-    cb(out)
 end)
 
 -- Helper: return full item data (server-side). Shape returned approximates:
@@ -673,7 +675,7 @@ RegisterNetEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, netId, id, s
             _U('trainSpawnedwebMain') ..
             _U('charNameWeb') ..
             character.firstname ..
-            " " ..
+            ' ' ..
             character.lastname ..
             _U('charIdentWeb') ..
             character.identifier ..
@@ -748,7 +750,7 @@ RegisterNetEvent('bcc-train:UpdateTrainSpawnVar', function(spawned, netId, id, s
         discord:sendMessage(
             _U('trainNotSpawnedWeb') ..
             _U('charNameWeb') ..
-            character.firstname .. " " ..
+            character.firstname .. ' ' ..
             character.lastname ..
             _U('charIdentWeb') ..
             character.identifier ..
@@ -1212,7 +1214,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
     discord:sendMessage(
         _U('charNameWeb') ..
         character.firstname ..
-        " " ..
+        ' ' ..
         character.lastname ..
         _U('charIdentWeb') ..
         character.identifier ..
@@ -1363,7 +1365,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
     discord:sendMessage(
         _U('charNameWeb') ..
         character.firstname ..
-        " " ..
+        ' ' ..
         character.lastname ..
         _U('charIdentWeb') ..
         character.identifier ..
@@ -1631,7 +1633,7 @@ RegisterNetEvent('bcc-train:BridgeFallHandler', function(freshJoin)
         discord:sendMessage(
             _U('charNameWeb') ..
             character.firstname ..
-            " " ..
+            ' ' ..
             character.lastname ..
             _U('charIdentWeb') ..
             character.identifier ..
@@ -1648,19 +1650,34 @@ RegisterNetEvent('bcc-train:DeliveryPay', function(destination)
     local src = source
     local user = Core.getUser(src)
 
+    -- Validate user exists
     if not user then
         DBG.Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
+
+    local character = user.getUsedCharacter
 
     -- Validate destination parameter (must provide `rewards` table)
     if not destination or not destination.rewards or type(destination.rewards) ~= 'table' then
         DBG.Error('Invalid destination data provided for delivery pay; rewards table required')
         return
     end
+
     local rewards = destination.rewards
-    if type(rewards.cash) ~= 'number' then
-        DBG.Error('Invalid rewards.cash provided for delivery pay')
+    -- Validate reward types
+    if rewards.cash and type(rewards.cash) ~= 'number' then
+        DBG.Error('Invalid rewards.cash type provided for delivery pay')
+        return
+    end
+
+    if rewards.gold and type(rewards.gold) ~= 'number' then
+        DBG.Error('Invalid rewards.gold type provided for delivery pay')
+        return
+    end
+
+    if rewards.items and type(rewards.items) ~= 'table' then
+        DBG.Error('Invalid rewards.items type provided for delivery pay')
         return
     end
 
@@ -1670,16 +1687,24 @@ RegisterNetEvent('bcc-train:DeliveryPay', function(destination)
         return
     end
 
-    local character = user.getUsedCharacter
+    -- Build reward notification messages
+    local rewardMessages = {}
+    local awardedItems = {}
+
     -- Award cash
     if rewards.cash and rewards.cash > 0 then
         character.addCurrency(0, rewards.cash)
+        table.insert(rewardMessages, string.format('$%s %s', tostring(rewards.cash), _U('currencyCash')))
+        DBG.Info(string.format('Awarded cash to src=%s amount=%s', tostring(src), tostring(rewards.cash)))
     end
-    -- Award gold (assumes character.addCurrency accepts currency type 1 for gold; adapt if different)
+
+    -- Award gold
     if rewards.gold and rewards.gold > 0 then
-        -- If the server/economy uses a different method for gold, replace the next line accordingly
         character.addCurrency(1, rewards.gold)
+        table.insert(rewardMessages, string.format('%s %s', tostring(rewards.gold), _U('currencyGold')))
+        DBG.Info(string.format('Awarded gold to src=%s amount=%s', tostring(src), tostring(rewards.gold)))
     end
+
     -- Award item rewards via inventory export if present, but only if the player can carry them
     local failedAwards = {}
     if rewards.items and type(rewards.items) == 'table' then
@@ -1687,33 +1712,61 @@ RegisterNetEvent('bcc-train:DeliveryPay', function(destination)
             if it and it.item and it.quantity and tonumber(it.quantity) and tonumber(it.quantity) > 0 then
                 local qty = tonumber(it.quantity)
                 local canCarry = true
+                local failReason = 'Inventory full'
+
                 -- Check carry capacity if the export exists
                 if exports.vorp_inventory and exports.vorp_inventory.canCarryItem then
-                    local ok, reason = exports.vorp_inventory:canCarryItem(src, it.item, qty)
-                    -- canCarryItem may return boolean or (boolean, reason)
-                    if ok == false then
-                        canCarry = false
-                        table.insert(failedAwards, { item = it.item, quantity = qty, reason = reason })
-                    end
+                    canCarry = exports.vorp_inventory:canCarryItem(src, it.item, qty)
                 end
 
                 if canCarry then
-                    exports.vorp_inventory:addItem(src, it.item, qty)
-                    DBG.Info(string.format('Awarded item to src=%s item=%s qty=%s', tostring(src), tostring(it.item), tostring(qty)))
+                    local success = exports.vorp_inventory:addItem(src, it.item, qty)
+                    if success ~= false then
+                        DBG.Info(string.format('Awarded item to src=%s item=%s qty=%s', tostring(src), tostring(it.item), tostring(qty)))
+                        local label = it.label or tostring(it.item)
+                        table.insert(awardedItems, string.format('%s x%d', label, qty))
+                    else
+                        -- addItem returned false, treat as failed
+                        table.insert(failedAwards, { item = it.item, label = it.label, quantity = qty, reason = 'Failed to add item' })
+                        DBG.Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=addItem returned false', tostring(src), tostring(it.item), tostring(qty)))
+                    end
+                else
+                    table.insert(failedAwards, { item = it.item, label = it.label, quantity = qty, reason = failReason })
+                    DBG.Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=%s', tostring(src), tostring(it.item), tostring(qty), tostring(failReason)))
                 end
             end
         end
     end
 
+    -- Notify player about successful rewards
+    if #rewardMessages > 0 or #awardedItems > 0 then
+        -- Send currency notification
+        if #rewardMessages > 0 then
+            local currencyMsg = _U('deliveryRewardsCurrency') .. ' ' .. table.concat(rewardMessages, ', ')
+            DBG.Info(string.format('Sending currency notification to src=%s: %s', tostring(src), currencyMsg))
+            Core.NotifyRightTip(src, currencyMsg, 5000)
+        end
+
+        -- Send item notification separately
+        if #awardedItems > 0 then
+            local itemMsg = _U('deliveryRewardsItems') .. ' ' .. table.concat(awardedItems, ', ')
+            DBG.Info(string.format('Sending item notification to src=%s: %s', tostring(src), itemMsg))
+            Core.NotifyRightTip(src, itemMsg, 5000)
+        end
+    else
+        DBG.Info(string.format('No rewards to notify for src=%s (rewardMessages=%d, awardedItems=%d)', tostring(src), #rewardMessages, #awardedItems))
+    end
+
     -- Notify player about failed awards (items that couldn't fit in inventory)
     if #failedAwards > 0 then
-        local msg = _U('couldNotAwardItemsHeader')
+        local failedItemsList = {}
         for _, f in ipairs(failedAwards) do
-            local label = getItemLabel(f.item)
-            msg = msg .. string.format('\n%s x%d', label, f.quantity)
-            DBG.Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=%s', tostring(src), tostring(f.item), tostring(f.quantity), tostring(f.reason)))
+            local label = f.label or tostring(f.item)
+            table.insert(failedItemsList, string.format('%s x%d', label, f.quantity))
         end
-        Core.NotifyRightTip(src, msg, 8000)
+        local msg = _U('couldNotAwardItemsHeader') .. ' ' .. table.concat(failedItemsList, ', ')
+        DBG.Warning(string.format('Sending failed awards notification to src=%s: %s', tostring(src), msg))
+        Core.NotifyRightTip(src, msg, 6000)
     end
 
     -- Clean up completed mission
@@ -1722,7 +1775,7 @@ RegisterNetEvent('bcc-train:DeliveryPay', function(destination)
     discord:sendMessage(
         _U('charNameWeb') ..
         character.firstname ..
-        " " ..
+        ' ' ..
         character.lastname ..
         _U('charIdentWeb') ..
         character.identifier ..

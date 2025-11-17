@@ -14,26 +14,30 @@ shared_scripts {
 }
 
 client_scripts {
-    'client/train_state.lua',
-    'client/train_models.lua',
-    'client/train_spawn.lua',
+    'client/client_init.lua',
     'client/prompts.lua',
     'client/active_trains.lua',
     'client/blips_npc.lua',
-    'client/spawn_and_handlers.lua',
-    'client/commands.lua',
+    'client/train_spawning.lua',
+    'client/train_handlers.lua',
+    'client/main_loop.lua',
+    'client/events.lua',
     'client/missions_init.lua',
     'client/missions_player.lua',
     'client/menus/shops/main.lua',
     'client/menus/shops/*.lua',
-    'client/menus/*.lua',
-    'client/test_commands.lua'
+    'client/menus/*.lua'
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/database.lua',
-    'server/server.lua',
+    'server/server_init.lua',
+    'server/train_shop.lua',
+    'server/train_operations.lua',
+    'server/train_inventory.lua',
+    'server/missions.lua',
+    'server/events.lua',
     'server/exports.lua'
 }
 

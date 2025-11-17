@@ -8,17 +8,17 @@ DeliveryLocations = {
         items = {                                         -- Items Required to Start Mission (ALL items listed are required to start)
             { item = 'apple', label = 'Apple', quantity = 1 },
         },
-        rewards = { -- Rewards for Completing Mission
-            cash = 30,
-            gold = 2,
-            items = { -- example: { item = 'apple',   label = 'Apple',  quantity = 3 },
-                { item = 'apple',   label = 'Apple',  quantity = 3 },
-                { item = 'carrots', label = 'Carrot', quantity = 2 },
+        rewards = {                        -- Rewards for Completing Mission (min/max values for random amounts)
+            cash = { min = 20, max = 50 }, -- Random cash amount between min and max
+            gold = { min = 1, max = 5 },   -- Random gold amount between min and max
+            items = {                      -- Random quantities between min and max for each item
+                { item = 'apple',   label = 'Apple',  min = 1, max = 5 },
+                { item = 'carrots', label = 'Carrot', min = 1, max = 3 },
             }
         },
         outWest = false, -- Set false if This is Not in the Desert/Western Part of the Map
         radius = 10,     -- Radius from trainCoords to Stop the Train
-        enabled = true  -- Set false to disable this location
+        enabled = true   -- Set false to disable this location
     },
     -----------------------------------------------------
 
@@ -31,12 +31,12 @@ DeliveryLocations = {
         items = {                                        -- Items Required to Start Mission (ALL items listed are required to start)
             { item = 'apple', label = 'Apple', quantity = 1 },
         },
-        rewards = { -- Rewards for Completing Mission
-            cash = 30,
-            gold = 2,
-            items = { -- example: { item = 'apple',   label = 'Apple',  quantity = 3 },
-                { item = 'apple',   label = 'Apple',  quantity = 3 },
-                { item = 'carrots', label = 'Carrot', quantity = 2 },
+        rewards = {                        -- Rewards for Completing Mission (min/max values for random amounts)
+            cash = { min = 20, max = 50 }, -- Random cash amount between min and max
+            gold = { min = 1, max = 5 },   -- Random gold amount between min and max
+            items = {                      -- Random quantities between min and max for each item
+                { item = 'apple',   label = 'Apple',  min = 1, max = 5 },
+                { item = 'carrots', label = 'Carrot', min = 1, max = 3 },
             }
         },
         outWest = false, -- Set false if This is Not in the Desert/Western Part of the Map
@@ -54,17 +54,17 @@ DeliveryLocations = {
         items = {                                           -- Items Required to Start Mission (ALL items listed are required to start)
             { item = 'apple', label = 'Apple', quantity = 1 },
         },
-        rewards = { -- Rewards for Completing Mission
-            cash = 30,
-            gold = 2,
-            items = { -- example: { item = 'apple',   label = 'Apple',  quantity = 3 },
-                { item = 'apple',   label = 'Apple',  quantity = 3 },
-                { item = 'carrots', label = 'Carrot', quantity = 2 },
+        rewards = {                        -- Rewards for Completing Mission (min/max values for random amounts)
+            cash = { min = 20, max = 50 }, -- Random cash amount between min and max
+            gold = { min = 1, max = 5 },   -- Random gold amount between min and max
+            items = {                      -- Random quantities between min and max for each item
+                { item = 'apple',   label = 'Apple',  min = 1, max = 5 },
+                { item = 'carrots', label = 'Carrot', min = 1, max = 3 },
             }
         },
         outWest = false, -- Set false if This is Not in the Desert/Western Part of the Map
         radius = 10,     -- Radius from trainCoords to Stop the Train
-        enabled = true  -- Set false to disable this location
+        enabled = true   -- Set false to disable this location
     },
     -----------------------------------------------------
 
@@ -77,17 +77,17 @@ DeliveryLocations = {
         items = {                                            -- Items Required to Start Mission (ALL items listed are required to start)
             { item = 'apple', label = 'Apple', quantity = 1 },
         },
-        rewards = { -- Rewards for Completing Mission
-            cash = 30,
-            gold = 2,
-            items = { -- example: { item = 'apple',   label = 'Apple',  quantity = 3 },
-                { item = 'apple',   label = 'Apple',  quantity = 3 },
-                { item = 'carrots', label = 'Carrot', quantity = 2 },
+        rewards = {                        -- Rewards for Completing Mission (min/max values for random amounts)
+            cash = { min = 20, max = 50 }, -- Random cash amount between min and max
+            gold = { min = 1, max = 5 },   -- Random gold amount between min and max
+            items = {                      -- Random quantities between min and max for each item
+                { item = 'apple',   label = 'Apple',  min = 1, max = 5 },
+                { item = 'carrots', label = 'Carrot', min = 1, max = 3 },
             }
         },
         outWest = true, -- Set false if This is Not in the Desert/Western Part of the Map
         radius = 10,    -- Radius from trainCoords to Stop the Train
-        enabled = true -- Set false to disable this location
+        enabled = true  -- Set false to disable this location
     },
     -----------------------------------------------------
     -- Add as Many Locations as You Want

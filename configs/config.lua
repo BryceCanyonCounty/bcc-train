@@ -4,7 +4,7 @@ Config = {
     -----------------------------------------------------
 
     devMode = {
-        active = true, -- Set true to view debug prints
+        active = false, -- Set true to view debug prints
     },
     -----------------------------------------------------
 
@@ -15,6 +15,9 @@ Config = {
         repairCooldown = 45,       -- Seconds between repair operations
         lockpickCooldown = 10,     -- Seconds between lockpick attempts
         lockpickBreakPenalty = 60, -- Additional seconds after breaking lockpick
+        purchaseCooldown = 5,      -- Seconds between train purchases (prevents duplicate buys)
+        renameCooldown = 10,       -- Seconds between train rename operations (prevents spam)
+        sellCooldown = 5,          -- Seconds between train sell operations (prevents accidental double-sell)
     },
     -----------------------------------------------------
 
@@ -22,10 +25,17 @@ Config = {
     -----------------------------------------------------
 
     keys = {
-        station   = 0x760A9C6F, -- Default: 0x760A9C6F [G]
-        bridge    = 0x760A9C6F, -- Default: 0x760A9C6F [G]
-        delivery  = 0x760A9C6F, -- Default: 0x760A9C6F [G]
-        inventory = 0xD8F73058, -- Default: 0xD8F73058 [U]
+        station   = 0x760A9C6F, -- Default: 0x760A9C6F [G] Open Shop Menu
+        ret       = 0x27D1C284, -- Default: 0x27D1C284 [R] Return Train at Shop
+        bridge    = 0x760A9C6F, -- Default: 0x760A9C6F [G] Blow Up Bridge
+        delivery  = 0x760A9C6F, -- Default: 0x760A9C6F [G] Start Delivery Mission Minigame
+        inventory = 0xD8F73058, -- Default: 0xD8F73058 [U] Open Train Inventory
+    },
+    -----------------------------------------------------
+
+    commands = {
+        trainInv = 'traininv',     -- Command to open train inventory
+        showTrains = 'showtrains', -- Command to show active trains on the map
     },
     -----------------------------------------------------
 
@@ -53,13 +63,13 @@ Config = {
     seated = false, -- Default: false / Set to true to have Player teleport to drivers seat
     -----------------------------------------------------
 
-    cruiseControl = true, -- Set true to Enable Cruise Control
+    cruiseControl = false, -- Set true to Enable Cruise Control
     -----------------------------------------------------
 
     -- Driving / ramp settings (tweak to change speed ramp feel)
     driving = {
-        rampSteps = 16,      -- Default: 16 / Number of steps used when ramping speed on/off
-        rampStepWait = 125,  -- Default: 125 / Milliseconds to wait between each ramp step
+        rampSteps = 16,     -- Default: 16 / Number of steps used when ramping speed on/off
+        rampStepWait = 125, -- Default: 125 / Milliseconds to wait between each ramp step
     },
     -----------------------------------------------------
 
@@ -103,7 +113,7 @@ Config = {
         keytopress = 'B',     -- userandomkey must be false for this to work. Static key to press
         keycode = 66,         -- The JS keycode for the keytopress
         speed = 5,            -- How fast the orbiter grows
-        strict = false,        -- if true, letting the timer run out counts as a failed attempt
+        strict = false,       -- if true, letting the timer run out counts as a failed attempt
     },
     -----------------------------------------------------
 

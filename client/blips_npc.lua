@@ -1,14 +1,11 @@
-local Core = exports.vorp_core:GetCore()
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
 -- Temporary train locator: creates coordinate blips for known trains for a short duration
 TempTrainBlips = TempTrainBlips or {}
-local TEMP_BLIP_DURATION = (Config.trainBlips and Config.trainBlips.showTrains and Config.trainBlips.showTrains.blipDuration) or 10
+local TempBlipDuration = (Config.trainBlips and Config.trainBlips.showTrains and Config.trainBlips.showTrains.blipDuration) or 10
 
-function createTempCoordBlip(x, y, z, sprite, color, label)
+local function CreateTempCoordBlip(x, y, z, sprite, color, label)
     -- Returns a table { iconBlip = <blip>, radiusBlip = <blip> or nil }
     local iconBlip = Citizen.InvokeNative(0x554d9d53f696d002, 1664425300, x, y, z) -- BlipAddForCoords
+
     if sprite then
         if type(sprite) == 'number' then
             SetBlipSprite(iconBlip, sprite, true)
@@ -18,19 +15,23 @@ function createTempCoordBlip(x, y, z, sprite, color, label)
     elseif Config.trainBlips and Config.trainBlips.sprite then
         SetBlipSprite(iconBlip, Config.trainBlips.sprite, true)
     end
+
     if color then
-        DBG.Info('createTempCoordBlip: requested icon color key = ' .. tostring(color))
+        DBG.Info('CreateTempCoordBlip: requested icon color key = ' .. tostring(color))
     end
+
     if color and Config.BlipColors[color] then
-        DBG.Info('createTempCoordBlip: applying icon modifier = ' .. tostring(Config.BlipColors[color]))
+        DBG.Info('CreateTempCoordBlip: applying icon modifier = ' .. tostring(Config.BlipColors[color]))
         Citizen.InvokeNative(0x662D364ABF16DE2F, iconBlip, joaat(Config.BlipColors[color]))
     elseif Config.trainBlips and Config.trainBlips.color and Config.BlipColors[Config.trainBlips.color] then
-        DBG.Info('createTempCoordBlip: applying default trainBlips color = ' .. tostring(Config.BlipColors[Config.trainBlips.color]))
+        DBG.Info('CreateTempCoordBlip: applying default trainBlips color = ' .. tostring(Config.BlipColors[Config.trainBlips.color]))
         Citizen.InvokeNative(0x662D364ABF16DE2F, iconBlip, joaat(Config.BlipColors[Config.trainBlips.color]))
     end
+
     if label then
         Citizen.InvokeNative(0x9CB1A1623062F402, iconBlip, label)
     end
+
     -- Optionally create a radius blip for better visibility
     local radiusBlip = nil
     local radius = Config.trainBlips and Config.trainBlips.showTrains and Config.trainBlips.showTrains.tempRadius or 0
@@ -40,20 +41,20 @@ function createTempCoordBlip(x, y, z, sprite, color, label)
         radiusBlip = Citizen.InvokeNative(0x45F13B7E0A15C880, radiusHash, vec, radius) -- BlipAddForRadius
         -- Apply color modifier to radius blip if available
         if color and Config.BlipColors[color] then
-            DBG.Info('createTempCoordBlip: applying radius modifier from color key = ' .. tostring(color))
+            DBG.Info('CreateTempCoordBlip: applying radius modifier from color key = ' .. tostring(color))
             Citizen.InvokeNative(0x662D364ABF16DE2F, radiusBlip, joaat(Config.BlipColors[color]))
         elseif Config.trainBlips and Config.trainBlips.showTrains and Config.trainBlips.showTrains.tempColor and Config.BlipColors[Config.trainBlips.showTrains.tempColor] then
-            DBG.Info('createTempCoordBlip: applying radius modifier from tempColor = ' .. tostring(Config.trainBlips.showTrains.tempColor))
+            DBG.Info('CreateTempCoordBlip: applying radius modifier from tempColor = ' .. tostring(Config.trainBlips.showTrains.tempColor))
             Citizen.InvokeNative(0x662D364ABF16DE2F, radiusBlip, joaat(Config.BlipColors[Config.trainBlips.showTrains.tempColor]))
         else
-            DBG.Info('createTempCoordBlip: no radius color modifier available for color key = ' .. tostring(color))
+            DBG.Info('CreateTempCoordBlip: no radius color modifier available for color key = ' .. tostring(color))
         end
     end
 
     return { iconBlip = iconBlip, radiusBlip = radiusBlip }
 end
 
-function showTrainsCommandImpl()
+local function ShowTrainsCommandImpl()
     ActiveTrainsLocal = ActiveTrainsLocal or {}
     TempTrainBlips = TempTrainBlips or {}
 
@@ -92,11 +93,11 @@ function showTrainsCommandImpl()
                         else
                             displayColor = info.blipColor
                         end
-                        local blipHandles = createTempCoordBlip(x, y, z, info.blipSprite, displayColor, label)
+                        local blipHandles = CreateTempCoordBlip(x, y, z, info.blipSprite, displayColor, label)
                         TempTrainBlips[netId] = blipHandles
 
                         CreateThread(function()
-                            Wait((TEMP_BLIP_DURATION or 10) * 1000)
+                            Wait((TempBlipDuration or 10) * 1000)
                             local handles = TempTrainBlips[netId]
                             if handles then
                                 if handles.iconBlip and DoesBlipExist(handles.iconBlip) then
@@ -123,25 +124,33 @@ RegisterCommand('showtrains', function()
     local allowed = Core.Callback.TriggerAwait('bcc-train:CanUseShowTrains')
     if not allowed then return end
 
-    -- If we have no snapshot yet, request one and wait briefly for it to arrive
+    -- If we have no snapshot yet, request one directly
     ActiveTrainsLocal = ActiveTrainsLocal or {}
     local hasAny = false
     for _ in pairs(ActiveTrainsLocal) do hasAny = true; break end
     if not hasAny then
-        TriggerServerEvent('bcc-train:RequestActiveTrains')
-        local waited = 0
-        while waited < 1500 do
-            -- check if snapshot populated
-            for _ in pairs(ActiveTrainsLocal) do hasAny = true; break end
-            if hasAny then break end
-            Wait(100)
-            waited = waited + 100
+        local snapshot = Core.Callback.TriggerAwait('bcc-train:RequestActiveTrains')
+        if snapshot and type(snapshot) == 'table' then
+            -- Store snapshot entries locally
+            for _, t in ipairs(snapshot) do
+                if t.owner ~= GetPlayerServerId(PlayerId()) then
+                    ActiveTrainsLocal[t.netId] = {
+                        netId = t.netId,
+                        id = t.id,
+                        owner = t.owner,
+                        ownerName = t.ownerName,
+                        blipSprite = t.blipSprite,
+                        blipColor = t.blipColor,
+                        coords = t.coords
+                    }
+                end
+            end
         end
     end
-    showTrainsCommandImpl()
+    ShowTrainsCommandImpl()
 end, false)
 
-function isShopClosed(stationCfg)
+function IsTrainShopClosed(stationCfg)
     local hour = GetClockHours()
     local hoursActive = stationCfg.shop.hours.active
 
@@ -189,27 +198,6 @@ function ManageBlip(station, closed)
     end
 end
 
-function LoadModel(model, modelName)
-    if not IsModelValid(model) then
-        return print('Invalid model:', modelName)
-    end
-
-    if not HasModelLoaded(model) then
-        RequestModel(model, false)
-
-        local timeout = 10000
-        local startTime = GetGameTimer()
-
-        while not HasModelLoaded(model) do
-            if GetGameTimer() - startTime > timeout then
-                print('Failed to load model:', modelName)
-                return
-            end
-            Wait(10)
-        end
-    end
-end
-
 function AddNPC(station)
     local stationCfg = Stations[station]
     local coords = stationCfg.npc.coords
@@ -219,8 +207,7 @@ function AddNPC(station)
         local model = joaat(modelName)
         LoadModel(model, modelName)
 
-        stationCfg.NPC = CreatePed(model, coords.x, coords.y, coords.z - 1, stationCfg.npc.heading, false, false, false,
-            false)
+        stationCfg.NPC = CreatePed(model, coords.x, coords.y, coords.z - 1, stationCfg.npc.heading, false, false, false, false)
         Citizen.InvokeNative(0x283978A15512B2FE, stationCfg.NPC, true) -- SetRandomOutfitVariation
 
         SetEntityCanBeDamaged(stationCfg.NPC, false)

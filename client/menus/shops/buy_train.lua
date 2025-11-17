@@ -1,7 +1,3 @@
-local Core = exports.vorp_core:GetCore()
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
 local SortedTrains = {}
 
 local function naturalSort(a, b)
@@ -15,6 +11,7 @@ end
 
 -- Initialize sorted train lists
 local function InitializeSortedTrains()
+    DBG.Info('Initializing sorted train lists')
     local categories = {
         cargo = Cargo,
         passenger = Passenger,
@@ -37,7 +34,10 @@ local function InitializeSortedTrains()
         table.sort(SortedTrains[categoryName], function(a, b)
             return naturalSort(a.config.label, b.config.label)
         end)
+
+        DBG.Info(string.format('Category %s: %d trains loaded', categoryName, #SortedTrains[categoryName]))
     end
+    DBG.Success('Sorted train lists initialized successfully')
 end
 
 -- Initialize sorted lists when script loads
@@ -68,6 +68,7 @@ local function FormatPrice(trainCfg, currencyType)
 end
 
 function BuyTrainsMenu(station)
+    DBG.Info(string.format('Opening buy trains menu for station: %s', tostring(station)))
     local BuyTrainsPage = TrainShopMenu:RegisterPage('buyTrains:page')
     local stationCfg = Stations[station]
 
@@ -80,7 +81,7 @@ function BuyTrainsMenu(station)
     })
 
     BuyTrainsPage:RegisterElement('subheader', {
-        value = 'Select Category',
+        value = _U('selectCategory'),
         slot = 'header',
         style = {
             ['font-size'] = '0.94vw',
@@ -93,11 +94,11 @@ function BuyTrainsMenu(station)
         style = {}
     })
 
-    local trainCategories = { -- Change/Translate 'name' only
-        { name = 'Cargo',     id = 'cargo' },
-        { name = 'Passenger', id = 'passenger' },
-        { name = 'Mixed',     id = 'mixed' },
-        { name = 'Special',   id = 'special' },
+    local trainCategories = {
+        { name = _U('cargoCat'),     id = 'cargo' },
+        { name = _U('passengerCat'), id = 'passenger' },
+        { name = _U('mixedCat'),     id = 'mixed' },
+        { name = _U('specialCat'),   id = 'special' },
     }
 
     for i, category in ipairs(trainCategories) do
@@ -125,7 +126,7 @@ function BuyTrainsMenu(station)
     })
 
     BuyTrainsPage:RegisterElement('button', {
-        label = 'Menu',
+        label = _U('openMainMenu'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -136,7 +137,7 @@ function BuyTrainsMenu(station)
     end)
 
     BuyTrainsPage:RegisterElement('button', {
-        label = 'Close',
+        label = _U('close'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -157,6 +158,7 @@ function BuyTrainsMenu(station)
 end
 
 function TrainsMenu(category, station)
+    DBG.Info(string.format('Opening trains menu - Category: %s, Station: %s', tostring(category), tostring(station)))
     local TrainsPage = TrainShopMenu:RegisterPage('trains:page')
     local stationCfg = Stations[station]
 
@@ -169,7 +171,7 @@ function TrainsMenu(category, station)
     })
 
     TrainsPage:RegisterElement('subheader', {
-        value = 'Select Train',
+        value = _U('selectTrain'),
         slot = 'header',
         style = {
             ['font-size'] = '0.94vw',
@@ -183,10 +185,12 @@ function TrainsMenu(category, station)
     })
 
     -- Get job-filtered trains for this category
+    DBG.Info(string.format('Requesting job-filtered trains for category: %s', tostring(category)))
     local jobFilteredTrains = Core.Callback.TriggerAwait('bcc-train:GetJobFilteredTrains', category)
     if not jobFilteredTrains or next(jobFilteredTrains) == nil then
+        DBG.Warning(string.format('No trains available in category %s for player job', tostring(category)))
         TrainsPage:RegisterElement('textdisplay', {
-            value = 'No trains available for your job',
+            value = _U('noTrainForJob'),
             slot = 'content',
             style = {
                 ['color'] = '#FF6B6B',
@@ -196,6 +200,8 @@ function TrainsMenu(category, station)
         return
     end
 
+    DBG.Success(string.format('Received %d job-filtered trains', #jobFilteredTrains or 0))
+
     -- Create sorted list from job-filtered trains
     local sortedTrains = {}
     for trainHash, trainCfg in pairs(jobFilteredTrains) do
@@ -204,11 +210,13 @@ function TrainsMenu(category, station)
             config = trainCfg
         })
     end
-    
+
     -- Sort by label using natural sort
     table.sort(sortedTrains, function(a, b)
         return naturalSort(a.config.label, b.config.label)
     end)
+
+    DBG.Info(string.format('Displaying %d sorted trains in menu', #sortedTrains))
 
     -- Add sorted trains to menu
     for _, trainData in ipairs(sortedTrains) do
@@ -222,6 +230,7 @@ function TrainsMenu(category, station)
         }, function(data)
             DeletePreviewTrain()
             local hash = data.id
+            DBG.Info(string.format('Train selected for preview - Hash: %s', tostring(hash)))
             -- Spawn new preview train using station spawn coordinates with normal direction
             PreviewTrain = SpawnPreviewTrainWithDirection(tonumber(hash), station, false)
             PurchaseMenu(hash, category, station)
@@ -239,7 +248,7 @@ function TrainsMenu(category, station)
     })
 
     TrainsPage:RegisterElement('button', {
-        label = 'Back',
+        label = _U('back'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -250,7 +259,7 @@ function TrainsMenu(category, station)
     end)
 
     TrainsPage:RegisterElement('button', {
-        label = 'Close',
+        label = _U('close'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -271,6 +280,7 @@ function TrainsMenu(category, station)
 end
 
 function PurchaseMenu(modelHash, category, station)
+    DBG.Info(string.format('Opening purchase menu - Model: %s, Category: %s, Station: %s', tostring(modelHash), tostring(category), tostring(station)))
     local PurchasePage = TrainShopMenu:RegisterPage('trains:page')
     local stationCfg = Stations[station]
     local currencyType = stationCfg.shop.currency
@@ -278,6 +288,7 @@ function PurchaseMenu(modelHash, category, station)
     if currencyType == 1 then
         selectedCurrency = 'gold' -- Force gold if config is gold only
     end
+    DBG.Info(string.format('Currency type: %d, Default selection: %s', currencyType, selectedCurrency))
 
     PurchasePage:RegisterElement('header', {
         value = stationCfg.shop.name,
@@ -288,7 +299,7 @@ function PurchaseMenu(modelHash, category, station)
     })
 
     PurchasePage:RegisterElement('subheader', {
-        value = 'Train Information',
+        value = _U('trainInfo'),
         slot = 'header',
         style = {
             ['font-size'] = '0.94vw',
@@ -305,7 +316,7 @@ function PurchaseMenu(modelHash, category, station)
     local priceText = FormatPrice(trainCfg, currencyType)
 
     PurchasePage:RegisterElement('textdisplay', {
-        value = trainCfg and trainCfg.label or "Unknown Train Name",
+        value = trainCfg and trainCfg.label or _U("unknownTrainName"),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -315,7 +326,7 @@ function PurchaseMenu(modelHash, category, station)
     })
 
     PurchasePage:RegisterElement('textdisplay', {
-        value = 'Price: ' .. priceText,
+        value = _U('price') .. priceText,
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -325,7 +336,7 @@ function PurchaseMenu(modelHash, category, station)
     })
 
     PurchasePage:RegisterElement('textdisplay', {
-        value = 'Inventory: ' .. (trainCfg and trainCfg.inventory and tostring(trainCfg.inventory.limit) or '100') .. ' slots',
+        value = _U('inventory') .. (trainCfg and trainCfg.inventory and tostring(trainCfg.inventory.limit) or '100') .. _U('slots'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -335,7 +346,7 @@ function PurchaseMenu(modelHash, category, station)
     })
 
     PurchasePage:RegisterElement('textdisplay', {
-        value = 'Max Speed: ' .. (trainCfg and tostring(trainCfg.maxSpeed) or 'N/A'),
+        value = _U('maxSpeed') .. (trainCfg and tostring(trainCfg.maxSpeed) or 'N/A'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -347,12 +358,12 @@ function PurchaseMenu(modelHash, category, station)
     -- Only show currency selector if station allows both currencies
     if currencyType == 2 then
         PurchasePage:RegisterElement('arrows', {
-            label = 'Currency',
+            label = _U('currency'),
             slot = 'content',
             start = 1,
             options = {
-                { display = 'Cash',  extra = 'cash' },
-                { display = 'Gold',  extra = 'gold' }
+                { display = _U('currencyCash'),  extra = 'cash' },
+                { display = _U('currencyGold'),  extra = 'gold' }
             },
             style = {
                 ['color'] = '#E0E0E0',
@@ -360,14 +371,14 @@ function PurchaseMenu(modelHash, category, station)
             persist = false,
         }, function(data)
             selectedCurrency = data.value.extra
-            print('Currency selection changed to:', selectedCurrency)
+            DBG.Info(string.format('Currency selection changed to: %s', tostring(selectedCurrency)))
         end)
     end
 
     local inputValue = ''
     PurchasePage:RegisterElement('input', {
-        label = 'Train Name',
-        placeholder = 'Enter Name',
+        label = _U('trainName'),
+        placeholder = _U('enterName'),
         persist = false,
         style = {
             ['color'] = '#E0E0E0',
@@ -377,7 +388,7 @@ function PurchaseMenu(modelHash, category, station)
     end)
 
     PurchasePage:RegisterElement('button', {
-        label = 'Purchase',
+        label = _U('purchase'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0'
@@ -387,6 +398,7 @@ function PurchaseMenu(modelHash, category, station)
         DeletePreviewTrain()
         local hash = data.id
         local trainName = inputValue and inputValue ~= '' and inputValue or nil -- Send name if provided
+        DBG.Info(string.format('Purchase initiated - Hash: %s, Currency: %s, Name: %s', tostring(hash), tostring(selectedCurrency), tostring(trainName or 'default')))
         TriggerServerEvent('bcc-train:BuyTrain', hash, selectedCurrency, trainName, station)
         ShopMenu(station)
     end)
@@ -402,7 +414,7 @@ function PurchaseMenu(modelHash, category, station)
     })
 
     PurchasePage:RegisterElement('button', {
-        label = 'Back',
+        label = _U('back'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -413,7 +425,7 @@ function PurchaseMenu(modelHash, category, station)
     end)
 
     PurchasePage:RegisterElement('button', {
-        label = 'Close',
+        label = _U('close'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'

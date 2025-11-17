@@ -1,8 +1,3 @@
--- Delivery mission (chunked)
-local Core = exports.vorp_core:GetCore()
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
 function DeliveryMission(station, presetDestination)
     -- Validate station parameter
     if not station or not Stations[station] then

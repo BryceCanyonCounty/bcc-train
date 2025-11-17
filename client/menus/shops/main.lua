@@ -1,8 +1,3 @@
-local Core = exports.vorp_core:GetCore()
-local FeatherMenu = exports['feather-menu'].initiate()
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
 TrainShopMenu = FeatherMenu:RegisterMenu('bcc-train:shop:menu', {
     top = '3%',
     left = '3%',
@@ -50,7 +45,7 @@ function ShopMenu(station)
     })
 
     MainPage:RegisterElement('subheader', {
-        value = 'Train Management',
+        value = _U('trainManagement'),
         slot = 'header',
         style = {
             ['font-size'] = '0.94vw',
@@ -64,13 +59,10 @@ function ShopMenu(station)
     })
 
     local mainCategories = { -- names to language file later
-        { name = 'My Trains', id = 'myTrains' },
-        { name = 'Buy Train', id = 'buyTrain' },
-        { name = 'Delivery Mission', id = 'deliveryMission' }
+        { name = _U('myTrainsCat'), id = 'myTrains' },
+        { name = _U('buyTrainCat'), id = 'buyTrain' },
+        { name = _U('deliveryMissionCat'), id = 'deliveryMission' }
     }
-    if MyTrain ~= 0 then
-        table.insert(mainCategories, { name = 'Return Train', id = 'returnTrain' }) -- Changed from deleteTrain
-    end
 
     for i, category in ipairs(mainCategories) do
         MainPage:RegisterElement('button', {
@@ -116,19 +108,6 @@ function ShopMenu(station)
 
                 -- Show delivery mission confirmation page
                 DeliveryMissionConfirmation(station)
-
-            elseif data.id == 'returnTrain' then
-                -- Double-check that train still exists before returning it
-                if MyTrain and MyTrain ~= 0 and DoesEntityExist(MyTrain) then
-                    Core.NotifyRightTip('Train returned to depot', 4000)
-                    TriggerEvent('bcc-train:ResetTrain')
-                    -- Close and reopen menu to refresh the return button state
-                    TrainShopMenu:Close()
-                    Wait(100)
-                    ShopMenu(station)
-                else
-                    Core.NotifyRightTip('No train to return', 4000)
-                end
             end
         end)
     end
@@ -144,7 +123,7 @@ function ShopMenu(station)
     })
 
     MainPage:RegisterElement('button', {
-        label = 'Close',
+        label = _U('close'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'

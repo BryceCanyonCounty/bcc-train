@@ -13,20 +13,37 @@ This is the best, full fledged train script for RedM! A multitude of features li
   - Purchased trains are stored in database with hex hash system
   - Can set a max number of trains a player can own
   - Ownership-based inventory access control
+  - Train naming and renaming
+  - Inventory warning when selling trains with stored items
 
 - **Enhanced Train Management**
   - Improved train spawning with proper cleanup validation
   - Train preview system when purchasing
-  - Safe train selling with automatic cleanup of spawned trains
-  - Return train function (despawn without selling)
+  - Safe train selling with automatic checks (prevents selling spawned trains)
+  - Return train function with automatic cleanup
   - Direction toggle for train spawning
+  - Regional spawn limits (separate east/west tracking)
+  - Active train tracking with network entity validation
 
-- **Advanced Security & Lockpicking**
+- **Advanced Security & Rate Limiting**
+  - Comprehensive rate limiting system (configurable per operation)
+  - Purchase cooldown (prevents duplicate buys)
+  - Sell cooldown (prevents accidental double-sells)
+  - Rename cooldown (prevents spam)
+  - Fuel/repair cooldowns
+  - Lockpick cooldown with break penalty
+  - Atomic database operations with transaction locking
+  - Server-side validation for all operations
+  - Hex hash format validation
+  - Train ownership verification
+
+- **Lockpicking System**
   - Lockpick other players' trains to access their inventories
   - Multi-lockpick item support (configurable)
   - Configurable lockpick difficulty and attempts
   - Random or static lockpick options
   - Robbery alerts for law enforcement
+  - Cooldown system to prevent spam
 
 - **Train Operations**
   - Track Switching system
@@ -53,6 +70,13 @@ This is the best, full fledged train script for RedM! A multitude of features li
   - Server-based delivery cooldown (persists through relog)
   - Dynamic mission selection based on train region
   - Option to require items to start a mission
+  - Reward system with money and items
+
+- **Communication & Networking**
+  - Callback-based client-server communication (optimized)
+  - Active trains snapshot system for late joiners
+  - Real-time train blip updates with entity tracking
+  - Network entity validation and cleanup
 
 - **Special Features**
   - Bacchus Bridge destruction with dynamite
@@ -67,14 +91,18 @@ This is the best, full fledged train script for RedM! A multitude of features li
   - Automatic train cleanup management
   - Enhanced user feedback and notifications
   - Performance optimizations
+  - Multi-language support
+  - Configurable rate limiting for all operations
+  - Safe operation checks (prevents selling spawned trains, duplicate purchases, etc.)
 
 ## Dependencies
 
-- [vorp_core](https://github.com/VORPCORE/vorp-core-lua)
-- [vorp_inventory](https://github.com/VORPCORE/vorp_inventory-lua)
+- [vorp_core](https://github.com/VORPCORE/vorp_core)
+- [vorp_inventory](https://github.com/VORPCORE/vorp_inventory)
+- [vorp_menu](https://github.com/VORPCORE/vorp_menu)
 - [feather-menu](https://github.com/FeatherFramework/feather-menu/releases)
 - [bcc-utils](https://github.com/BryceCanyonCounty/bcc-utils)
-- [bcc-minigames](https://github.com/BryceCanyonCounty/bcc-minigames)
+- [bcc-minigames](https://github.com/BryceCanyonCounty/bcc-minigames/releases)
 - [bcc-job-alerts](https://github.com/BryceCanyonCounty/bcc-job-alerts)
 
 ## Installation
@@ -107,31 +135,6 @@ bcc-train:verify  # Check if all items exist in database
 bcc-train:migrate # Force database migration (if needed)
 ```
 
-## Configuration
-
-### Main Config (`configs/config.lua`)
-
-- `currency`: Currency system (0=cash only, 1=gold only, 2=both)
-- `sellPrice`: Percentage of purchase price when selling (default: 0.75)
-- `autoSeedDatabase`: Enable/disable automatic database seeding
-- `maxTrains`: Maximum trains per player
-- `lockpickItem`: Array of items that can be used as lockpicks
-- Lockpick system settings (difficulty, attempts, random degrees)
-- Key bindings and webhook settings
-- `trainBlips`: global train blip settings (enable, nameMode, standardName, sprite, color)
-  
-### Train Configuration (`configs/trains.lua`)
-
-- Individual train models with hex hash keys
-- Categorized trains: Cargo, Passenger, Mixed, Special
-- Per-train fuel, condition, and inventory settings
-
-### Delivery Locations (`configs/delivery.lua`)
-
-- Keyed table structure for easy management
-- Individual enable/disable per location
-- Region-based mission selection (outWest property)
-
 ## How to Use
 
 ### Basic Controls
@@ -161,12 +164,14 @@ Players may find it useful to quickly locate active trains on the map. The `/sho
 
 - Navigate to "My Trains" → Select train → "Sell Train"
 - View sell price and choose currency to receive
-- Confirm sale (automatically cleans up spawned trains)
+- Confirm sale (automatically validates train is not spawned)
+- Inventory warning displayed if train has registered inventory
 - Sell price is percentage of purchase price (configurable)
+- Cooldown protection prevents accidental double-sells
 
 ### Lockpicking System
 
-- Approach another player's train
+- Board another player's train
 - Press `U` to attempt lockpicking (requires any configured lockpick item)
 - Complete the minigame to access their inventory
 - Failed attempts consume lockpicks after max attempts reached
@@ -175,24 +180,26 @@ Players may find it useful to quickly locate active trains on the map. The `/sho
 
 - Cruise control will disengage if conductor leaves engine seat
 - Fuel and condition decrease during operation
-- Use bagofcoal to refuel and trainoil to repair
+- Use 'fuel item' to refuel and 'condition item' to repair
 
 ## API
 
-### Check if train spawned (Server Side)
+### Check if Player Has Active Train (Server Side)
 
-Returns true if a train has been spawned, false if no train is spawned/in-use.
+Returns true if the specified player has an active spawned train, false otherwise.
 
 ```lua
-local retval = exports['bcc-train']:CheckIfTrainIsSpawned()
+local playerId = source -- or any player server ID
+local retval = exports['bcc-train']:CheckIfTrainIsSpawned(playerId)
 ```
 
-### Get Train Entity (Server Side)
+### Get Train Entity Network ID (Server Side)
 
-Returns the train entity if one exists, false if no train is spawned.
+Returns the network ID of the player's train entity if one exists, false if no train is spawned.
 
 ```lua
-local retval = exports['bcc-train']:GetTrainEntity()
+local playerId = source -- or any player server ID
+local networkId = exports['bcc-train']:GetTrainEntity(playerId)
 ```
 
 ### Check if Bacchus Bridge Destroyed (Server Side)
@@ -206,7 +213,8 @@ local retval = exports['bcc-train']:BacchusBridgeDestroyed()
 ## Credits and Notes
 
 - All imagery was provided by Lady Grey
-- Thanks sav for the NUI
+- Thanks SavSin for the NUI
+- Lockpick for train inventory added by Itska
 
 ## GitHub
 

@@ -107,6 +107,10 @@ This is the best, full fledged train script for RedM! A multitude of features li
 
 ## Installation
 
+ Note: If updating a current installation, backup the `train` table from your database before running this version.
+
+ Enable DevMode for the first run of this version so you can see the database migration status in the server console.
+
 - Download the latest release `bcc-train.zip` at [/releases/latest](https://github.com/BryceCanyonCounty/bcc-train/releases/latest)
 - Add `bcc-train` folder to your resources folder
 - Add `ensure bcc-train` to your `resources.cfg`

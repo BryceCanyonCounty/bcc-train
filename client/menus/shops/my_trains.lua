@@ -1,7 +1,3 @@
-local Core = exports.vorp_core:GetCore()
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
 local function ResetTrainAndSpawn(myTrainData, trainCfg, direction, station)
     -- Check regional spawn limits before proceeding
     local canSpawn = Core.Callback.TriggerAwait('bcc-train:CheckTrainSpawn', station)
@@ -37,8 +33,8 @@ local function ResetTrainAndSpawn(myTrainData, trainCfg, direction, station)
 
             -- Cleanup failed after timeout
             if attempts >= maxAttempts then
-                DBG.Error("Train cleanup failed after 5 seconds. Cannot spawn new train safely.")
-                Core.NotifyRightTip("Failed to cleanup existing train. Please try again.", 4000)
+                DBG.Error('Train cleanup failed after 5 seconds. Cannot spawn new train safely.')
+                Core.NotifyRightTip(_U('trainCleanupFailed'), 4000)
                 return
             end
         end)
@@ -50,8 +46,8 @@ end
 
 -- Format sell price display based on currency config
 local function FormatSellPrice(trainCfg, currencyType)
-    if not trainCfg or not trainCfg.price or type(trainCfg.price) ~= "table" then
-        return "Price unavailable"
+    if not trainCfg or not trainCfg.price or type(trainCfg.price) ~= 'table' then
+        return 'Price unavailable'
     end
 
     local price = trainCfg.price
@@ -59,18 +55,21 @@ local function FormatSellPrice(trainCfg, currencyType)
 
     if currencyType == 0 then -- Cash only
         local sellPrice = math.floor(sellMultiplier * (price.cash or 0))
-        return string.format("$%d", sellPrice)
+        return string.format('$%d', sellPrice)
+
     elseif currencyType == 1 then -- Gold only
         local sellPrice = math.floor(sellMultiplier * (price.gold or 0))
-        return string.format("%d Gold", sellPrice)
+        return string.format('%d %s', sellPrice, _U('currencyGold'))
+
     elseif currencyType == 2 then -- Both currencies
         local cashSell = math.floor(sellMultiplier * (price.cash or 0))
         local goldSell = math.floor(sellMultiplier * (price.gold or 0))
-        local cashStr = string.format("$%d", cashSell)
-        local goldStr = string.format("%d Gold", goldSell)
-        return cashStr .. " | " .. goldStr
+        local cashStr = string.format('$%d', cashSell)
+        local goldStr = string.format('%d %s', goldSell, _U('currencyGold'))
+        return cashStr .. ' | ' .. goldStr
+
     else
-        return "Invalid currency config"
+        return 'Invalid currency config'
     end
 end
 
@@ -87,7 +86,7 @@ function MyTrainsMenu(myTrains, station)
     })
 
     MyTrainsPage:RegisterElement('subheader', {
-        value = 'My Trains',
+        value = _U('myTrainsCat'),
         slot = 'header',
         style = {
             ['font-size'] = '0.94vw',
@@ -136,7 +135,7 @@ function MyTrainsMenu(myTrains, station)
     })
 
     MyTrainsPage:RegisterElement('button', {
-        label = 'Menu',
+        label = _U('openMainMenu'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -147,7 +146,7 @@ function MyTrainsMenu(myTrains, station)
     end)
 
     MyTrainsPage:RegisterElement('button', {
-        label = 'Close',
+        label = _U('close'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -198,7 +197,7 @@ function MyTrainActions(myTrainData, trainCfg, station)
     })
 
     MyTrainActionsPage:RegisterElement('button', {
-        label = 'Spawn Train',
+        label = _U('spawnTrain'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0'
@@ -210,7 +209,7 @@ function MyTrainActions(myTrainData, trainCfg, station)
     end)
 
     MyTrainActionsPage:RegisterElement('toggle', {
-        label = 'Set Direction',
+        label = _U('setTrainDirection'),
         start = false,
         slot = 'content',
         style = {
@@ -234,8 +233,8 @@ function MyTrainActions(myTrainData, trainCfg, station)
 
     local inputValue = ''
     MyTrainActionsPage:RegisterElement('input', {
-        label = 'Rename Train',
-        placeholder = 'Enter Name',
+        label = _U('renameTrain'),
+        placeholder = _U('enterName'),
         persist = false,
         style = {
             ['color'] = '#E0E0E0',
@@ -245,30 +244,33 @@ function MyTrainActions(myTrainData, trainCfg, station)
     end)
 
     MyTrainActionsPage:RegisterElement('button', {
-        label = 'Confirm Rename',
+        label = _U('confirmRename'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0'
         },
     }, function(data)
         if inputValue and inputValue ~= '' then
-            TriggerServerEvent('bcc-train:RenameTrain', myTrainData.trainid, inputValue)
+            local myTrains = Core.Callback.TriggerAwait('bcc-train:RenameTrain', myTrainData.trainid, inputValue)
             TrainShopMenu:Close()
-            -- Refresh the menu after rename
-            Wait(500) -- Small delay to allow server processing
-            local myTrains = Core.Callback.TriggerAwait('bcc-train:GetMyTrains')
-            if #myTrains <= 0 then
-                Core.NotifyRightTip(_U('noOwnedTrains'), 4000)
-            else
+            if myTrains and #myTrains > 0 then
                 MyTrainsMenu(myTrains, station)
+            else
+                -- If rename failed or no trains, refresh with current data
+                myTrains = Core.Callback.TriggerAwait('bcc-train:GetMyTrains')
+                if #myTrains > 0 then
+                    MyTrainsMenu(myTrains, station)
+                else
+                    Core.NotifyRightTip(_U('noOwnedTrains'), 4000)
+                end
             end
         else
-            Core.NotifyRightTip('Please enter a name for your train', 4000)
+            Core.NotifyRightTip(_U('nameTrain'), 4000)
         end
     end)
 
     MyTrainActionsPage:RegisterElement('button', {
-        label = 'Train Info',
+        label = _U('trainInfo'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0'
@@ -278,7 +280,7 @@ function MyTrainActions(myTrainData, trainCfg, station)
     end)
 
     MyTrainActionsPage:RegisterElement('button', {
-        label = 'Sell Train',
+        label = _U('sellTrain'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0'
@@ -298,7 +300,7 @@ function MyTrainActions(myTrainData, trainCfg, station)
     })
 
     MyTrainActionsPage:RegisterElement('button', {
-        label = 'Back',
+        label = _U('back'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -310,7 +312,7 @@ function MyTrainActions(myTrainData, trainCfg, station)
     end)
 
     MyTrainActionsPage:RegisterElement('button', {
-        label = 'Close',
+        label = _U('close'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -348,7 +350,7 @@ function SellTrainMenu(myTrainData, trainCfg, station)
     })
 
     SellPage:RegisterElement('subheader', {
-        value = 'Sell Train',
+        value = _U('sellTrain'),
         slot = 'header',
         style = {
             ['font-size'] = '0.94vw',
@@ -362,7 +364,7 @@ function SellTrainMenu(myTrainData, trainCfg, station)
     })
 
     SellPage:RegisterElement('textdisplay', {
-        value = 'Train: ' .. trainCfg.label,
+        value = _U('train') .. trainCfg.label,
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -373,7 +375,7 @@ function SellTrainMenu(myTrainData, trainCfg, station)
 
     local priceText = FormatSellPrice(trainCfg, currencyType)
     SellPage:RegisterElement('textdisplay', {
-        value = 'Sell Price: ' .. priceText,
+        value = _U('sellPrice') .. priceText,
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -382,15 +384,37 @@ function SellTrainMenu(myTrainData, trainCfg, station)
         }
     })
 
+    -- Check if train has registered inventory
+    local hasInventory = Core.Callback.TriggerAwait('bcc-train:CheckTrainInventory', myTrainData.trainid)
+    if hasInventory then
+        SellPage:RegisterElement('textdisplay', {
+            value = '⚠ ' .. _U('trainInventoryWarning1'),
+            slot = 'content',
+            style = {
+                ['color'] = '#FF6B6B',
+                ['font-size'] = '0.75vw',
+            }
+        })
+
+        SellPage:RegisterElement('textdisplay', {
+            value = _U('trainInventoryWarning2'),
+            slot = 'content',
+            style = {
+                ['color'] = '#FF6B6B',
+                ['font-size'] = '0.75vw',
+            }
+        })
+    end
+
     -- Only show currency selector if station allows both currencies
     if currencyType == 2 then
         SellPage:RegisterElement('arrows', {
-            label = 'Currency',
+            label = _U('currency'),
             slot = 'content',
             start = 1,
             options = {
-                { display = 'Cash',  extra = 'cash' },
-                { display = 'Gold',  extra = 'gold' }
+                { display = _U('currencyCash'),  extra = 'cash' },
+                { display = _U('currencyGold'),  extra = 'gold' }
             },
             style = {
                 ['color'] = '#E0E0E0',
@@ -402,17 +426,17 @@ function SellTrainMenu(myTrainData, trainCfg, station)
     end
 
     SellPage:RegisterElement('button', {
-        label = 'Confirm Sale',
+        label = _U('confirmSale'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0'
         },
     }, function(data)
-        -- Check if we're selling the currently spawned train
-        if MyTrain and MyTrain ~= 0 and DoesEntityExist(MyTrain) and TrainId == myTrainData.trainid then
-            -- This is the currently spawned train - clean it up first
-            TriggerEvent('bcc-train:ResetTrain')
-            print('Cleaned up spawned train before selling (ID: ' .. tostring(myTrainData.trainid) .. ')')
+        -- Check if train is currently spawned on server
+        local isSpawned = Core.Callback.TriggerAwait('bcc-train:IsTrainSpawned', myTrainData.trainid)
+        if isSpawned then
+            Core.NotifyRightTip(_U('cannotSellSpawnedTrain'), 4000)
+            return
         end
 
         DeletePreviewTrain() -- Clean up preview train before sale
@@ -431,7 +455,7 @@ function SellTrainMenu(myTrainData, trainCfg, station)
     })
 
     SellPage:RegisterElement('button', {
-        label = 'Back',
+        label = _U('back'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -442,7 +466,7 @@ function SellTrainMenu(myTrainData, trainCfg, station)
     end)
 
     SellPage:RegisterElement('button', {
-        label = 'Close',
+        label = _U('close'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -475,7 +499,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     })
 
     MyTrainSpecsPage:RegisterElement('subheader', {
-        value = 'Train Information',
+        value = _U('trainInfo'),
         slot = 'header',
         style = {
             ['font-size'] = '0.94vw',
@@ -489,7 +513,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     })
 
     MyTrainSpecsPage:RegisterElement('textdisplay', {
-        value = 'Name: ' .. myTrainData.name or trainCfg.label,
+        value = _U('name') .. (myTrainData.name or trainCfg.label),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -499,7 +523,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     })
 
     MyTrainSpecsPage:RegisterElement('textdisplay', {
-        value = 'Model: ' .. (trainCfg and trainCfg.label or "Unknown Train Model"),
+        value = _U('model') .. (trainCfg and trainCfg.label or _U('unknownModel')),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -509,7 +533,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     })
 
     MyTrainSpecsPage:RegisterElement('textdisplay', {
-        value = 'Max Speed: ' .. (trainCfg and tostring(trainCfg.maxSpeed) or 'N/A'),
+        value = _U('maxSpeed') .. (trainCfg and tostring(trainCfg.maxSpeed) or 'N/A'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -519,7 +543,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     })
 
     MyTrainSpecsPage:RegisterElement('textdisplay', {
-        value = 'Inventory: ' .. (trainCfg and trainCfg.inventory and tostring(trainCfg.inventory.limit) or 'N/A'),
+        value = _U('inventory') .. (trainCfg and trainCfg.inventory and tostring(trainCfg.inventory.limit) or 'N/A'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -529,7 +553,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     })
 
     MyTrainSpecsPage:RegisterElement('textdisplay', {
-        value = 'Fuel: ' .. myTrainData.fuel .. ' / ' .. (trainCfg and trainCfg.fuel and tostring(trainCfg.fuel.maxAmount) or 'N/A'),
+        value = _U('fuelInfo') .. myTrainData.fuel .. ' / ' .. (trainCfg and trainCfg.fuel and tostring(trainCfg.fuel.maxAmount) or 'N/A'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -539,7 +563,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     })
 
     MyTrainSpecsPage:RegisterElement('textdisplay', {
-        value = 'Condition: ' .. myTrainData.condition .. ' / ' .. (trainCfg and trainCfg.condition and tostring(trainCfg.condition.maxAmount) or 'N/A'),
+        value = _U('conditionInfo') .. myTrainData.condition .. ' / ' .. (trainCfg and trainCfg.condition and tostring(trainCfg.condition.maxAmount) or 'N/A'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -559,7 +583,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     })
 
     MyTrainSpecsPage:RegisterElement('button', {
-        label = 'Back',
+        label = _U('back'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'
@@ -569,7 +593,7 @@ function MyTrainSpecsMenu(myTrainData, trainCfg, station)
     end)
 
     MyTrainSpecsPage:RegisterElement('button', {
-        label = 'Close',
+        label = _U('close'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'

@@ -1,12 +1,10 @@
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
 -- Main menu prompts (made global so chunked files can access)
-MenuPrompt = MenuPrompt or 0
-MenuGroup = MenuGroup or GetRandomIntInRange(0, 0xffffff)
-BridgePrompt = BridgePrompt or 0
-BridgeGroup = BridgeGroup or GetRandomIntInRange(0, 0xffffff)
-MainPromptsStarted = MainPromptsStarted or false
+MenuPrompt = 0
+ReturnPrompt = 0
+MenuGroup = GetRandomIntInRange(0, 0xffffff)
+BridgePrompt = 0
+BridgeGroup = GetRandomIntInRange(0, 0xffffff)
+MainPromptsStarted = false
 
 function StartMainPrompts()
     if MainPromptsStarted then
@@ -14,12 +12,12 @@ function StartMainPrompts()
         return
     end
 
-    if not MenuGroup then
-        DBG.Error('MenuGroup not initialized')
+    if not MenuGroup or not BridgeGroup then
+        DBG.Error('MenuGroup or BridgeGroup not initialized')
         return
     end
 
-    if not Config or not Config.keys or not Config.keys.station or not Config.keys.bridge then
+    if not Config or not Config.keys or not Config.keys.station or not Config.keys.ret or not Config.keys.bridge then
         DBG.Error('Prompt keys are not configured properly')
         return
     end
@@ -32,9 +30,21 @@ function StartMainPrompts()
     UiPromptSetControlAction(MenuPrompt, Config.keys.station)
     UiPromptSetText(MenuPrompt, CreateVarString(10, 'LITERAL_STRING', _U('openMainMenu')))
     UiPromptSetVisible(MenuPrompt, true)
-    UiPromptSetStandardMode(MenuPrompt, true)
+    Citizen.InvokeNative(0x74C7D7B72ED0D3CF, MenuPrompt, 'MEDIUM_TIMED_EVENT') -- PromptSetStandardizedHoldMode
     UiPromptSetGroup(MenuPrompt, MenuGroup, 0)
     UiPromptRegisterEnd(MenuPrompt)
+
+    ReturnPrompt = UiPromptRegisterBegin()
+    if not ReturnPrompt or ReturnPrompt == 0 then
+        DBG.Error('Failed to register ReturnPrompt')
+        return
+    end
+    UiPromptSetControlAction(ReturnPrompt, Config.keys.ret)
+    UiPromptSetText(ReturnPrompt, CreateVarString(10, 'LITERAL_STRING', _U('returnTrain')))
+    UiPromptSetVisible(ReturnPrompt, true)
+    Citizen.InvokeNative(0x74C7D7B72ED0D3CF, ReturnPrompt, 'MEDIUM_TIMED_EVENT') -- PromptSetStandardizedHoldMode
+    UiPromptSetGroup(ReturnPrompt, MenuGroup, 0)
+    UiPromptRegisterEnd(ReturnPrompt)
 
     BridgePrompt = UiPromptRegisterBegin()
     if not BridgePrompt or BridgePrompt == 0 then
@@ -54,9 +64,9 @@ function StartMainPrompts()
 end
 
 -- Delivery prompt globals (also used across mission chunks)
-DeliveryPrompt = DeliveryPrompt or 0
-DeliveryGroup = DeliveryGroup or GetRandomIntInRange(0, 0xffffff)
-DeliveryPromptStarted = DeliveryPromptStarted or false
+DeliveryPrompt = 0
+DeliveryGroup = GetRandomIntInRange(0, 0xffffff)
+DeliveryPromptStarted = false
 
 function StartDeliveryPrompt()
     if DeliveryPromptStarted then

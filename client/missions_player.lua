@@ -1,8 +1,3 @@
-local Core = exports.vorp_core:GetCore()
-local MiniGame = exports['bcc-minigames'].initiate()
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
 AddEventHandler('bcc-train:PlayerDelivery', function(destination)
     StartDeliveryPrompt()
     local deliveryCoords = destination.deliveryCoords
@@ -19,7 +14,7 @@ AddEventHandler('bcc-train:PlayerDelivery', function(destination)
                 Wait(500)
                 MiniGame.Start('skillcheck', Config.minigame, function(result)
                     if result.passed then
-                        TriggerServerEvent('bcc-train:DeliveryPay', destination)
+                        TriggerServerEvent('bcc-train:DeliveryPay')
                         TriggerServerEvent('bcc-train:SetPlayerCooldown', 'delivery')
                     else
                         Core.NotifyRightTip(_U('missionFailed'), 4000)

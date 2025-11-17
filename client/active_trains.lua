@@ -1,34 +1,26 @@
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
--- Handle snapshot of active trains (for late joiners)
-RegisterNetEvent('bcc-train:ActiveTrainsSnapshot', function(snapshot)
-    if not snapshot or type(snapshot) ~= 'table' then return end
-    ActiveTrainsLocal = ActiveTrainsLocal or {}
-    -- Store snapshot entries locally; we will create blips only when the network entity is available
-    for _, t in ipairs(snapshot) do
-        -- Skip if this client is the owner (owner creates local blip elsewhere)
-        if t.owner ~= GetPlayerServerId(PlayerId()) then
-            ActiveTrainsLocal[t.netId] = {
-                netId = t.netId,
-                id = t.id,
-                owner = t.owner,
-                ownerName = t.ownerName,
-                blipSprite = t.blipSprite,
-                blipColor = t.blipColor,
-                coords = t.coords
-            }
-        end
-    end
-end)
-
 -- Request current active trains shortly after resource start so we show blips for existing trains
 CreateThread(function()
     Wait(2000) -- give other resources time to initialize and potential entities to exist
-    TriggerServerEvent('bcc-train:RequestActiveTrains')
+    local snapshot = Core.Callback.TriggerAwait('bcc-train:RequestActiveTrains')
+    if snapshot and type(snapshot) == 'table' then
+        ActiveTrainsLocal = ActiveTrainsLocal or {}
+        -- Store snapshot entries locally; we will create blips only when the network entity is available
+        for _, t in ipairs(snapshot) do
+            -- Skip if this client is the owner (owner creates local blip elsewhere)
+            if t.owner ~= GetPlayerServerId(PlayerId()) then
+                ActiveTrainsLocal[t.netId] = {
+                    netId = t.netId,
+                    id = t.id,
+                    owner = t.owner,
+                    ownerName = t.ownerName,
+                    blipSprite = t.blipSprite,
+                    blipColor = t.blipColor,
+                    coords = t.coords
+                }
+            end
+        end
+    end
 end)
-
--- Client no longer reports player position to server (global blip system disabled)
 
 -- Local maps for entity-attached blips
 ActiveTrainBlips = ActiveTrainBlips or {} -- netId -> blip handle
@@ -64,6 +56,7 @@ CreateThread(function()
                         elseif nameMode == 'standard' then
                             nameToUse = Config.trainBlips and Config.trainBlips.standardName or nil
                         end
+
                         if nameToUse then
                             Citizen.InvokeNative(0x9CB1A1623062F402, blip, nameToUse)
                         end

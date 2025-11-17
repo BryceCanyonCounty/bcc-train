@@ -1,7 +1,3 @@
-local Core = exports.vorp_core:GetCore()
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
-
 function DeliveryMissionConfirmation(station)
     -- Validate station parameter
     if not station or not Stations[station] then
@@ -19,7 +15,7 @@ function DeliveryMissionConfirmation(station)
 
     for locationKey, locationCfg in pairs(DeliveryLocations) do
         if locationCfg.enabled ~= false and locationCfg.outWest == Stations[station].train.outWest then
-            table.insert(locations, locationCfg)
+            table.insert(locations, {key = locationKey, config = locationCfg})
         end
     end
 
@@ -30,7 +26,9 @@ function DeliveryMissionConfirmation(station)
     end
 
     -- Select random destination
-    local destination = locations[math.random(1, #locations)]
+    local selectedLocation = locations[math.random(1, #locations)]
+    local destinationKey = selectedLocation.key
+    local destination = selectedLocation.config
     local stationCfg = Stations[station]
 
     -- Create confirmation page
@@ -45,7 +43,7 @@ function DeliveryMissionConfirmation(station)
     })
 
     ConfirmationPage:RegisterElement('subheader', {
-        value = 'Delivery Mission',
+        value = _U('deliveryMission'),
         slot = 'header',
         style = {
             ['font-size'] = '0.94vw',
@@ -60,7 +58,7 @@ function DeliveryMissionConfirmation(station)
 
     -- Show destination
     ConfirmationPage:RegisterElement('textdisplay', {
-        value = 'Destination: ' .. (destination.name or 'Unknown Location'),
+        value = _U('destination') .. (destination.name or _U('unknownLocation')),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -69,12 +67,12 @@ function DeliveryMissionConfirmation(station)
         }
     })
 
-    -- Show rewards (cash/gold/items). Support legacy `pay` by treating it as cash.
+    -- Show rewards (cash/gold/items)
     -- Rewards must be provided as a `rewards` table on the destination
     local rewards = destination.rewards or { cash = 0, gold = 0, items = {} }
 
     ConfirmationPage:RegisterElement('textdisplay', {
-        value = 'Rewards:',
+        value = _U('rewards'),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -85,7 +83,7 @@ function DeliveryMissionConfirmation(station)
 
     -- Cash
     ConfirmationPage:RegisterElement('textdisplay', {
-        value = string.format('• Cash: $%s', tostring(rewards.cash or 0)),
+        value = string.format('• %s: $%s', _U('currencyCash'), tostring(rewards.cash or 0)),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -97,7 +95,7 @@ function DeliveryMissionConfirmation(station)
     -- Gold (only show if >0)
     if rewards.gold and rewards.gold > 0 then
         ConfirmationPage:RegisterElement('textdisplay', {
-            value = string.format('• Gold: %s', tostring(rewards.gold)),
+            value = string.format('• %s: %s', _U('currencyGold'), tostring(rewards.gold)),
             slot = 'content',
             style = {
                 ['color'] = '#E0E0E0',
@@ -107,8 +105,7 @@ function DeliveryMissionConfirmation(station)
         })
     end
 
-    -- Items (each on its own line). If a label is provided in the rewards config use it
-    -- otherwise batch-resolve via the cached RPC to avoid multiple calls.
+    -- Items (each on its own line)
     if rewards.items and #rewards.items > 0 then
         -- Determine which ids still need resolution
         local idsToResolve = {}
@@ -122,7 +119,7 @@ function DeliveryMissionConfirmation(station)
 
         local resolved = {}
         if needResolve then
-            -- We no longer call the server for labels here; fall back to raw id if missing
+            -- fall back to raw id if missing
             for _, id in ipairs(idsToResolve) do resolved[id] = tostring(id) end
         end
 
@@ -146,7 +143,7 @@ function DeliveryMissionConfirmation(station)
     local itemCheck = nil
     if destination.requireItem then
         ConfirmationPage:RegisterElement('textdisplay', {
-            value = 'Required Items:',
+            value = _U('requiredItems'),
             slot = 'content',
             style = {
                 ['color'] = '#E0E0E0',
@@ -199,7 +196,7 @@ function DeliveryMissionConfirmation(station)
             end
         else
             ConfirmationPage:RegisterElement('textdisplay', {
-                value = '• No items configured',
+                value = '• ' .. _U('noItemsConfigured'),
                 slot = 'content',
                 style = {
                     ['color'] = '#FF6B6B',
@@ -210,7 +207,7 @@ function DeliveryMissionConfirmation(station)
         end
     else
         ConfirmationPage:RegisterElement('textdisplay', {
-            value = 'Required Items: None',
+            value = _U('noRequiredItems'),
             slot = 'content',
             style = {
                 ['color'] = '#E0E0E0',
@@ -239,22 +236,15 @@ function DeliveryMissionConfirmation(station)
     -- Start Mission (only shown when player can start)
     if canStart then
         ConfirmationPage:RegisterElement('button', {
-            label = 'Start Mission',
+            label = _U('startMission'),
             slot = 'footer',
             style = {
                 ['color'] = '#E0E0E0',
             }
         }, function()
             -- Ask server to start the delivery mission (server will validate and remove items)
-            -- Sanitize and pass rewards to server (use rewards table or fallback to pay)
-            local serverDestination = {
-                requireItem = destination.requireItem,
-                items = destination.items,
-                rewards = destination.rewards or { cash = 0, gold = 0, items = {} },
-                name = destination.name
-            }
-            -- Call server via callback and wait for response
-            local result = Core.Callback.TriggerAwait('bcc-train:StartDeliveryMission', serverDestination)
+            -- Send only destination key - server will look up config
+            local result = Core.Callback.TriggerAwait('bcc-train:StartDeliveryMission', destinationKey)
             if result and result.success then
                 local serverDest = result.destination or destination
                 InMission = true
@@ -266,7 +256,7 @@ function DeliveryMissionConfirmation(station)
         end)
     else
         ConfirmationPage:RegisterElement('button', {
-            label = 'Missing required items to start mission!',
+            label = _U('missingDeliveryItems'),
             slot = 'footer',
             style = {
                 ['color'] = '#FFFFFF',
@@ -275,12 +265,12 @@ function DeliveryMissionConfirmation(station)
                 ['font-size'] = '0.9vw'
             }
         }, function()
-            Core.NotifyRightTip('Missing required items to start mission!', 4000)
+            Core.NotifyRightTip(_U('missingDeliveryItems'), 4000)
         end)
     end
 
     ConfirmationPage:RegisterElement('button', {
-        label = 'Back',
+        label = _U('back'),
         slot = 'footer',
         style = {
             ['color'] = '#E0E0E0'

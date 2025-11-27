@@ -208,3 +208,5 @@ end)
 Core.Callback.Register('bcc-train:GetRegionalSpawnCounts', function(source, cb)
     cb(SpawnedTrainsByRegion)
 end)
+
+BccUtils.Versioner.checkFile(GetCurrentResourceName(), 'https://github.com/BryceCanyonCounty/bcc-train')

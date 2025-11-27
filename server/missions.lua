@@ -1,6 +1,18 @@
 -- Delivery missions: mission management, rewards, and cooldowns
 
 local ActiveMissions = {} -- Track active delivery missions
+local PreviewMissions = {} -- Temporary precomputed previews for clients
+local PREVIEW_EXPIRY = (Config and Config.previewExpirySeconds) or 300 -- seconds (default 5 minutes)
+
+local function isPreviewValid(src)
+    local p = PreviewMissions[src]
+    if not p or not p.timestamp then return false end
+    if os.time() - p.timestamp > PREVIEW_EXPIRY then
+        PreviewMissions[src] = nil
+        return false
+    end
+    return true
+end
 local CooldownData = {}
 
 -- Mission tracking functions
@@ -155,31 +167,39 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
     local rewards = destination.rewards
     DBG.Info(string.format('Awarding rewards from server config for destination: %s', tostring(mission.destinationKey)))
 
-    -- Calculate random reward amounts
+    -- If the mission has previewRewards (precomputed when client accepted), use them
     local cashAmount = 0
     local goldAmount = 0
+    local finalItemRewards = nil
 
-    -- Validate and calculate cash reward (min/max format required)
-    if rewards.cash then
-        if type(rewards.cash) == 'table' and rewards.cash.min and rewards.cash.max then
-            cashAmount = math.random(rewards.cash.min, rewards.cash.max)
-        else
-            DBG.Error('Invalid rewards.cash format - must be table with min/max properties')
+    if mission.previewRewards and type(mission.previewRewards) == 'table' then
+        cashAmount = mission.previewRewards.cash or 0
+        goldAmount = mission.previewRewards.gold or 0
+        finalItemRewards = mission.previewRewards.items or {}
+    else
+        -- Calculate random reward amounts (fallback to config-driven randomization)
+        -- Validate and calculate cash reward (min/max format required)
+        if rewards.cash then
+            if type(rewards.cash) == 'table' and rewards.cash.min and rewards.cash.max then
+                cashAmount = math.random(rewards.cash.min, rewards.cash.max)
+            else
+                DBG.Error('Invalid rewards.cash format - must be table with min/max properties')
+            end
         end
-    end
 
-    -- Validate and calculate gold reward (min/max format required)
-    if rewards.gold then
-        if type(rewards.gold) == 'table' and rewards.gold.min and rewards.gold.max then
-            goldAmount = math.random(rewards.gold.min, rewards.gold.max)
-        else
-            DBG.Error('Invalid rewards.gold format - must be table with min/max properties')
+        -- Validate and calculate gold reward (min/max format required)
+        if rewards.gold then
+            if type(rewards.gold) == 'table' and rewards.gold.min and rewards.gold.max then
+                goldAmount = math.random(rewards.gold.min, rewards.gold.max)
+            else
+                DBG.Error('Invalid rewards.gold format - must be table with min/max properties')
+            end
         end
-    end
 
-    if rewards.items and type(rewards.items) ~= 'table' then
-        DBG.Error('Invalid rewards.items type in server config')
-        return
+        if rewards.items and type(rewards.items) ~= 'table' then
+            DBG.Error('Invalid rewards.items type in server config')
+            return
+        end
     end
 
     -- Build reward notification messages
@@ -202,16 +222,15 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
 
     -- Award item rewards via inventory export if present, but only if the player can carry them
     local failedAwards = {}
-    if rewards.items and type(rewards.items) == 'table' then
-        for _, it in ipairs(rewards.items) do
+    local itemRewardSource = finalItemRewards or rewards.items
+    if itemRewardSource and type(itemRewardSource) == 'table' then
+        for _, it in ipairs(itemRewardSource) do
             if it and it.item then
-                -- Calculate random quantity for this item (min/max format required)
-                local qty = 0
-                if type(it.min) == 'number' and type(it.max) == 'number' then
+                local qty = tonumber(it.quantity) or tonumber(it.qty) or tonumber(it.amount) or it.count
+                if not qty and it.min and it.max then
                     qty = math.random(it.min, it.max)
-                else
-                    DBG.Error(string.format('Invalid item reward format for %s - must have min/max properties', tostring(it.item)))
                 end
+                qty = tonumber(qty) or 0
 
                 if qty > 0 then
                     local canCarry = true
@@ -229,7 +248,6 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
                             local label = it.label or tostring(it.item)
                             table.insert(awardedItems, string.format('%s x%d', label, qty))
                         else
-                            -- addItem returned false, treat as failed
                             table.insert(failedAwards, { item = it.item, label = it.label, quantity = qty, reason = 'Failed to add item' })
                             DBG.Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=addItem returned false', tostring(src), tostring(it.item), tostring(qty)))
                         end
@@ -310,11 +328,86 @@ RegisterNetEvent('bcc-train:StartDeliveryMission', function(destinationKey)
         return
     end
 
+    -- If a preview exists for this source, validate expiry and only allow start if destinationKey matches
+    local preview = PreviewMissions[src]
+    if preview then
+        if not isPreviewValid(src) then
+            Core.NotifyRightTip(src, _U('deliveryPreviewExpired'), 4000)
+            return
+        end
+        if preview.destinationKey ~= destinationKey then
+            DBG.Warning(string.format('StartDeliveryMission destination mismatch for src=%s (preview=%s requested=%s)', tostring(src), tostring(preview.destinationKey), tostring(destinationKey)))
+            Core.NotifyRightTip(src, _U('deliveryStartFailed'), 4000)
+            return
+        end
+    end
+
     if startDeliveryMission(src, destinationKey) then
+        -- Attach preview rewards to mission if present
+        if preview and preview.rewards then
+            ActiveMissions[src].previewRewards = preview.rewards
+            PreviewMissions[src] = nil
+        end
         Core.NotifyRightTip(src, _U('deliveryStarted'), 4000)
     else
         Core.NotifyRightTip(src, _U('deliveryStartFailed'), 4000)
     end
+end)
+
+-- Server callback: compute a delivery preview (destination + exact rewards) for a station
+Core.Callback.Register('bcc-train:RequestDeliveryPreview', function(source, cb, station)
+    local src = source
+    local user = Core.getUser(src)
+    if not user then
+        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        return cb(nil)
+    end
+
+    if not station or not Stations[station] then
+        DBG.Error('Invalid station provided for delivery preview')
+        return cb(nil)
+    end
+
+    -- Build eligible locations for station (match outWest)
+    local candidates = {}
+    for key, cfg in pairs(DeliveryLocations) do
+        if cfg.enabled ~= false and cfg.outWest == Stations[station].train.outWest then
+            table.insert(candidates, { key = key, cfg = cfg })
+        end
+    end
+
+    if #candidates == 0 then
+        return cb(nil)
+    end
+
+    local choice = candidates[math.random(1, #candidates)]
+    local destinationKey = choice.key
+    local destination = choice.cfg
+
+    -- Compute rewards deterministically here
+    local computed = { cash = 0, gold = 0, items = {} }
+    if destination.rewards then
+        local r = destination.rewards
+        if r.cash and type(r.cash) == 'table' and r.cash.min and r.cash.max then
+            computed.cash = math.random(r.cash.min, r.cash.max)
+        end
+        if r.gold and type(r.gold) == 'table' and r.gold.min and r.gold.max then
+            computed.gold = math.random(r.gold.min, r.gold.max)
+        end
+        if r.items and type(r.items) == 'table' then
+            for _, it in ipairs(r.items) do
+                if it and it.item and type(it.min) == 'number' and type(it.max) == 'number' then
+                    table.insert(computed.items, { item = it.item, label = it.label, quantity = math.random(it.min, it.max) })
+                end
+            end
+        end
+    end
+
+    -- Store preview for this player (valid until they start the mission)
+    PreviewMissions[src] = { destinationKey = destinationKey, rewards = computed, timestamp = os.time() }
+
+    -- Return preview to client
+    return cb({ destinationKey = destinationKey, destinationName = destination.name, rewards = computed })
 end)
 
 -- Provide a callback variant so clients can TriggerAwait and get immediate success/failure
@@ -340,6 +433,21 @@ Core.Callback.Register('bcc-train:StartDeliveryMission', function(source, cb, de
 
     local ok = startDeliveryMission(src, destinationKey)
     if ok then
+        -- If a preview exists for this source, attach it to the ActiveMissions entry
+            local preview = PreviewMissions[src]
+            if preview then
+                if not isPreviewValid(src) then
+                    return cb({ success = false, error = 'preview_expired' })
+                end
+                if preview.destinationKey == destinationKey and preview.rewards then
+                    ActiveMissions[src].previewRewards = preview.rewards
+                    PreviewMissions[src] = nil
+                else
+                    DBG.Warning(string.format('StartDeliveryMission (callback) preview mismatch for src=%s preview=%s requested=%s', tostring(src), tostring(preview and preview.destinationKey), tostring(destinationKey)))
+                    -- continue without preview; do not fail the start solely for preview mismatch
+                end
+            end
+
         -- Look up and return full destination config from server (client needs it for display)
         local serverDestination = DeliveryLocations[destinationKey]
         if not serverDestination then

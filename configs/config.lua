@@ -78,6 +78,9 @@ Config = {
         delivery = 30,
     },
     -----------------------------------------------------
+    -- Preview expiry for delivery reward previews (seconds)
+    previewExpirySeconds = 300, -- Default: 300 seconds (5 minutes)
+    -----------------------------------------------------
 
     -- Train Fuel and Condition Items
     fuel = {

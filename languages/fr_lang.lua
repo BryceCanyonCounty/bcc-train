@@ -99,6 +99,7 @@ Locales["fr_lang"] = {
     completeDelivery = "Terminer la Livraison",
     missionFailed = "Mission Échouée !",
     missionExpired = "Mission Expirée ! Vous avez mis trop de temps à terminer la livraison",
+    deliveryPreviewExpired = "L'aperçu de livraison a expiré, demandez un nouvel aperçu",
     inMission = "Déjà en mission !",
     invalidMissionComplete = "Tentative de complétion de mission invalide",
     notYourMission = "Ce n'est pas votre mission à terminer",

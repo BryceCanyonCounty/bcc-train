@@ -25,10 +25,21 @@ function DeliveryMissionConfirmation(station)
         return
     end
 
-    -- Select random destination
-    local selectedLocation = locations[math.random(1, #locations)]
-    local destinationKey = selectedLocation.key
-    local destination = selectedLocation.config
+    -- Request server-side deterministic preview (destination + exact rewards)
+    local preview = Core.Callback.TriggerAwait('bcc-train:RequestDeliveryPreview', station)
+    if not preview or not preview.destinationKey then
+        Core.NotifyRightTip(_U('noDeliveryLocation'), 4000)
+        return
+    end
+
+    local destinationKey = preview.destinationKey
+    local destinationCfg = DeliveryLocations[destinationKey] or {}
+    local destination = {
+        name = preview.destinationName or destinationCfg.name or destinationKey,
+        rewards = preview.rewards or { cash = 0, gold = 0, items = {} },
+        items = destinationCfg.items,
+        requireItem = destinationCfg.requireItem
+    }
     local stationCfg = Stations[station]
 
     -- Create confirmation page
@@ -67,8 +78,7 @@ function DeliveryMissionConfirmation(station)
         }
     })
 
-    -- Show rewards (cash/gold/items)
-    -- Rewards must be provided as a `rewards` table on the destination
+    -- Show rewards (cash/gold/items) - preview provides exact numeric rewards
     local rewards = destination.rewards or { cash = 0, gold = 0, items = {} }
 
     ConfirmationPage:RegisterElement('textdisplay', {
@@ -81,9 +91,13 @@ function DeliveryMissionConfirmation(station)
         }
     })
 
-    -- Cash
+    -- Cash (server preview provides exact numeric value)
+    local cashDisplay = '$0'
+    if rewards and rewards.cash and type(rewards.cash) == 'number' and rewards.cash > 0 then
+        cashDisplay = string.format('$%s', tostring(rewards.cash))
+    end
     ConfirmationPage:RegisterElement('textdisplay', {
-        value = string.format('• %s: $%s', _U('currencyCash'), tostring(rewards.cash or 0)),
+        value = string.format('• %s: %s', _U('currencyCash'), cashDisplay),
         slot = 'content',
         style = {
             ['color'] = '#E0E0E0',
@@ -92,8 +106,8 @@ function DeliveryMissionConfirmation(station)
         }
     })
 
-    -- Gold (only show if >0)
-    if rewards.gold and rewards.gold > 0 then
+    -- Gold (server preview provides exact numeric value)
+    if rewards and rewards.gold and type(rewards.gold) == 'number' and rewards.gold > 0 then
         ConfirmationPage:RegisterElement('textdisplay', {
             value = string.format('• %s: %s', _U('currencyGold'), tostring(rewards.gold)),
             slot = 'content',
@@ -124,17 +138,20 @@ function DeliveryMissionConfirmation(station)
         end
 
         for _, r in ipairs(rewards.items) do
-            if r and r.item and r.quantity then
+            if r and r.item then
                 local label = r.label or resolved[r.item] or tostring(r.item)
-                ConfirmationPage:RegisterElement('textdisplay', {
-                    value = string.format('• %sx %s', tostring(r.quantity), tostring(label)),
-                    slot = 'content',
-                    style = {
-                        ['color'] = '#E0E0E0',
-                        ['font-variant'] = 'small-caps',
-                        ['font-size'] = '0.83vw',
-                    }
-                })
+                local qty = tonumber(r.quantity) or tonumber(r.qty) or tonumber(r.amount) or 0
+                if qty and qty > 0 then
+                    ConfirmationPage:RegisterElement('textdisplay', {
+                        value = string.format('• %sx %s', tostring(qty), tostring(label)),
+                        slot = 'content',
+                        style = {
+                            ['color'] = '#E0E0E0',
+                            ['font-variant'] = 'small-caps',
+                            ['font-size'] = '0.83vw',
+                        }
+                    })
+                end
             end
         end
     end

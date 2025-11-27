@@ -99,6 +99,7 @@ Locales["ro_lang"] = {
     completeDelivery = "Finalizează Livrarea",
     missionFailed = "Misiune Eșuată!",
     missionExpired = "Misiune Expirată! Ai întârziat prea mult să finalizezi livrarea",
+    deliveryPreviewExpired = "Previzualizarea livrării a expirat, solicită o previzualizare nouă",
     inMission = "Deja în misiune!",
     invalidMissionComplete = "Tentativă invalidă de finalizare a misiunii",
     notYourMission = "Aceasta nu este misiunea ta de finalizat",

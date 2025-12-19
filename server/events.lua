@@ -120,17 +120,21 @@ Core.Callback.Register('bcc-train:RequestActiveTrains', function(source, cb)
 
     -- Build a minimal snapshot (netId, id, station, owner)
     local snapshot = {}
-    for _, train in ipairs(ActiveTrains) do
-        table.insert(snapshot, {
-            netId = train.netId,
-            id = train.id,
-            station = train.station,
-            owner = train.owner,
-            ownerName = train.ownerName,
-            blipSprite = train.blipSprite,
-            blipColor = train.blipColor,
-            coords = train.coords
-        })
+    if ActiveTrains and type(ActiveTrains) == 'table' then
+        for _, train in ipairs(ActiveTrains) do
+            table.insert(snapshot, {
+                netId = train.netId,
+                id = train.id,
+                station = train.station,
+                owner = train.owner,
+                ownerName = train.ownerName,
+                blipSprite = train.blipSprite,
+                blipColor = train.blipColor,
+                coords = train.coords
+            })
+        end
+    else
+        DBG.Warning('ActiveTrains is nil or not a table in RequestActiveTrains callback')
     end
 
     return cb(snapshot)

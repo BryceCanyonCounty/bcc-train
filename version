@@ -1,2 +1,2 @@
-<2.0.1>
-- Updated to manage delivery rewards display
+<2.0.2>
+- Fixed ActiveTrains nil error

@@ -20,6 +20,7 @@ TrainShopMenu = FeatherMenu:RegisterMenu('bcc-train:shop:menu', {
         DisplayRadar(false)
     end,
     closed = function()
+        DeletePreviewTrain()
         InMenu = false
         DestroyAllCams(true)
         DisplayRadar(true)

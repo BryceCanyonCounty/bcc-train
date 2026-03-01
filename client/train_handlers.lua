@@ -1,5 +1,22 @@
 -- Train event handlers: driving logic, fuel/condition management, and gamer tags
 
+local function DrawSpeedometer(trainEntity)
+    if not trainEntity or trainEntity == 0 or not DoesEntityExist(trainEntity) then
+        return
+    end
+
+    local speedMph = math.floor((GetEntitySpeed(trainEntity) * 2.236936) + 0.5)
+    local label = string.format('%s: %d MPH', _U('speed'), speedMph)
+
+
+    SetTextScale(0.30, 0.30)
+    SetTextColor(255, 255, 255, 220)
+    SetTextCentre(true)
+    SetTextDropshadow(1, 0, 0, 0, 180)
+    SetTextFontForCurrentCommand(0)
+    DisplayText(CreateVarString(10, 'LITERAL_STRING', label), 0.50, 0.03)
+end
+
 AddEventHandler('bcc-train:TrainHandler', function(trainCfg, myTrainData)
     DrivingMenuOpened = false
     local despawnDist = Config.despawnDist or 300.0
@@ -19,6 +36,7 @@ AddEventHandler('bcc-train:TrainHandler', function(trainCfg, myTrainData)
         elseif distance <= 10 then
             sleep = 0
             if not Citizen.InvokeNative(0xE052C1B1CAA4ECE4, MyTrain, -1) and GetPedInVehicleSeat(MyTrain, -1) == playerPed then -- IsVehicleSeatFree
+                DrawSpeedometer(MyTrain)
                 if not DrivingMenuOpened then
                     DrivingMenuOpened = true
                     -- Freshly opening the driving menu (player just entered seat) should reset persisted speed

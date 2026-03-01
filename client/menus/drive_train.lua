@@ -1,6 +1,40 @@
 local switched = false
 DrivingMenuSpeed = 0
 
+local WHISTLE_SEQUENCES = {
+    'ACKNOWLEDGE',
+    'BACKING_UP',
+    'CROSSING',
+    'DANGER',
+    'MOVING',
+    'NEXT_STATION',
+    'PASSING',
+    'STOPPED',
+}
+
+local WHISTLE_SEQUENCE_LABELS = {
+    'Acknowledge',
+    'Backing Up',
+    'Crossing',
+    'Danger',
+    'Moving',
+    'Next Stn',
+    'Passing',
+    'Stopped',
+}
+
+-- 0-based index for VORP slider options
+local WhistleSequenceIndex = 0
+
+local function TriggerTrainWhistle(sequence)
+    if not MyTrain or MyTrain == 0 or not DoesEntityExist(MyTrain) then
+        return
+    end
+
+    local whistleSequence = sequence or WHISTLE_SEQUENCES[WhistleSequenceIndex + 1] or 'MOVING'
+    Citizen.InvokeNative(0xCFE122EC635CC2B2, MyTrain, whistleSequence, false, false) -- _TRIGGER_TRAIN_WHISTLE
+end
+
 local function TrackSwitch(toggle)
     local tracks = {
         { trackConfig = 'BRAITHWAITES2_TRACK_CONFIG' },
@@ -48,9 +82,11 @@ local function ApplyNativeTrainSpeed(signedTarget)
     local mag = math.min(math.abs(signedTarget) + buffer, 29.9)
     if signedTarget >= 0 then
         Citizen.InvokeNative(0xDFBA6BBFF7CCAFBB, MyTrain, mag) -- SetTrainSpeed (positive)
+        Citizen.InvokeNative(0x01021EB2E96B793C, MyTrain, mag) -- SetTrainCruiseSpeed (positive)
         Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, mag) -- SetTrainMaxSpeed
     else
         Citizen.InvokeNative(0xDFBA6BBFF7CCAFBB, MyTrain, -mag) -- SetTrainSpeed (negative)
+        Citizen.InvokeNative(0x01021EB2E96B793C, MyTrain, -mag) -- SetTrainCruiseSpeed (negative)
         Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, mag) -- SetTrainMaxSpeed
     end
 end
@@ -122,20 +158,57 @@ end
 CruiseActive = false
 CruiseAppliedMag = 0.0
 CruiseDirection = 1 -- 1 = forward, -1 = backward
+local CruiseHandoffToken = 0
+
+local function CancelCruiseHandoff()
+    CruiseHandoffToken = CruiseHandoffToken + 1
+end
+
+local function GetCurrentTrainSignedSpeed()
+    if not MyTrain or MyTrain == 0 then
+        return 0.0
+    end
+
+    local vel = GetEntityVelocity(MyTrain)
+    local fwd = GetEntityForwardVector(MyTrain)
+    return vel.x * fwd.x + vel.y * fwd.y + vel.z * fwd.z
+end
+
+local function GetCurrentTrainSpeedMagnitude()
+    local signedSpeed = GetCurrentTrainSignedSpeed()
+    return math.min(math.abs(signedSpeed), 29)
+end
+
 local function startCruise()
     if CruiseActive then return end
 
+    CancelCruiseHandoff()
     CruiseActive = true
     CreateThread(function()
-        -- Immediately hold the captured DrivingMenuSpeed when cruise is toggled on.
-        -- This preserves the player's current speed exactly when they engage cruise.
+        -- Ramp into cruise target from current train speed to prevent instant snap exploits.
         local targetMag = math.min(DrivingMenuSpeed or 0, 29) -- Cap at 29 even if display shows 30
-        if targetMag > 0 and MyTrain and MyTrain ~= 0 then
-            CruiseAppliedMag = targetMag
-            ApplyNativeTrainSpeed((CruiseDirection or 1) * targetMag)
+        if MyTrain and MyTrain ~= 0 then
+            local vel = GetEntityVelocity(MyTrain)
+            local fwd = GetEntityForwardVector(MyTrain)
+            local signedVel = vel.x * fwd.x + vel.y * fwd.y + vel.z * fwd.z
+
+            if signedVel > 0.01 then
+                CruiseDirection = 1
+            elseif signedVel < -0.01 then
+                CruiseDirection = -1
+            end
+
+            local startMag = math.min(math.abs(signedVel), 29)
+            CruiseAppliedMag = startMag
+
+            if targetMag > 0 then
+                StepRampLinear(startMag, targetMag, CruiseDirection or 1)
+            else
+                ApplyNativeTrainSpeed(0.0)
+            end
         end
 
-        local smoothFactor = 0.18 -- how quickly we approach the target (kept for stability)
+        local smoothFactor = 0.2 -- lower values smooth acceleration/deceleration and avoid snapping
         while CruiseActive do
             Wait(100)
             if not MyTrain or MyTrain == 0 then
@@ -189,9 +262,6 @@ local function startCruise()
             end
         end
         -- cleanup when cruise stops
-        if MyTrain and MyTrain ~= 0 then
-            ApplyNativeTrainSpeed(0.0)
-        end
         CruiseAppliedMag = 0.0
     end)
 end
@@ -203,19 +273,56 @@ local function stopCruise()
         Core.NotifyRightTip(_U('cruiseStopped'), 3000)
         return
     end
-    -- instead of snapping to zero, ramp CruiseAppliedMag down smoothly to zero
-    CreateThread(function()
-        local startMag = CruiseAppliedMag or 0.0
-        local sign = CruiseDirection or 1
-        StepRampLinear(startMag, 0.0, sign)
-        CruiseAppliedMag = 0.0
-        CruiseActive = false
-        -- ensure train stops
+
+    local speedMag = 0.0
+    local direction = CruiseDirection or 1
+    local signedSpeed = GetCurrentTrainSignedSpeed()
+
+    if math.abs(signedSpeed) > 0.25 then
+        direction = signedSpeed >= 0 and 1 or -1
+    end
+
+    if MyTrain and MyTrain ~= 0 then
+        speedMag = math.min(GetEntitySpeed(MyTrain), 29)
+    end
+    if speedMag <= 0.05 and CruiseAppliedMag and CruiseAppliedMag > 0.05 then
+        speedMag = math.min(CruiseAppliedMag, 29)
+    end
+
+    CruiseActive = false
+    CancelCruiseHandoff()
+    local handoffToken = CruiseHandoffToken
+
+    if speedMag > 0.05 then
+        DrivingMenuSpeed = speedMag
         if MyTrain and MyTrain ~= 0 then
-            ApplyNativeTrainSpeed(0.0)
+            local maxSpeed = math.min(speedMag + 0.1, 29.9)
+            Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, maxSpeed) -- SetTrainMaxSpeed
+            Citizen.InvokeNative(0xDFBA6BBFF7CCAFBB, MyTrain, direction * speedMag) -- SetTrainSpeed
         end
-        Core.NotifyRightTip(_U('cruiseStopped'), 3000)
-    end)
+
+        CreateThread(function()
+            for _ = 1, 5 do
+                Wait(120)
+                if handoffToken ~= CruiseHandoffToken then
+                    return
+                end
+                if CruiseActive or not EngineStarted or not MyTrain or MyTrain == 0 then
+                    return
+                end
+
+                local maxSpeed = math.min(speedMag + 0.1, 29.9)
+                Citizen.InvokeNative(0x9F29999DFDF2AEB8, MyTrain, maxSpeed) -- SetTrainMaxSpeed
+                Citizen.InvokeNative(0xDFBA6BBFF7CCAFBB, MyTrain, direction * speedMag) -- SetTrainSpeed
+            end
+        end)
+    else
+        DrivingMenuSpeed = 0
+    end
+
+    CruiseAppliedMag = 0.0
+
+    Core.NotifyRightTip(_U('cruiseStopped'), 3000)
 end
 
 function DrivingMenu(trainCfg, myTrainData, freshOpen)
@@ -232,6 +339,14 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
     VorpMenu.CloseAll()
     local elements = {}
     local speed = DrivingMenuSpeed or 0
+    local whistleOptions = {}
+    local selectedWhistleIndex = WhistleSequenceIndex + 1
+    local selectedWhistleName = WHISTLE_SEQUENCE_LABELS[selectedWhistleIndex] or WHISTLE_SEQUENCES[selectedWhistleIndex] or 'MOVING'
+    local selectedWhistleLabel = string.format('%d - %s', selectedWhistleIndex, selectedWhistleName)
+
+    for index = 1, #WHISTLE_SEQUENCES do
+        whistleOptions[index] = tostring(index)
+    end
 
     if EngineStarted then
         table.insert(elements, { label = _U('stopEngine'),   value = 'stopEngine',  desc = '', itemHeight = '1.5vh' })
@@ -242,6 +357,7 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
     table.insert(elements, {
         label = _U('speed'),
         value = speed,
+        tag = 'speed',
         desc = '',
         itemHeight = '1.5vh',
         type = 'slider',
@@ -249,6 +365,19 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
         max = math.min(trainCfg.maxSpeed, 30),
         hop = 1
     })
+
+    table.insert(elements, {
+        label = _U('whistleSequence'),
+        value = WhistleSequenceIndex,
+        tag = 'whistleSequence',
+        desc = selectedWhistleLabel,
+        itemHeight = '2.2vh',
+        type = 'slider',
+        min = 0,
+        options = whistleOptions
+    })
+
+    table.insert(elements, { label = _U('triggerWhistle'), value = 'triggerWhistle', desc = '', itemHeight = '1.5vh' })
 
     table.insert(elements, { label = _U('switchTrack'),  value = 'switchtrack', desc = '', itemHeight = '1.5vh' })
 
@@ -295,12 +424,13 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
                 -- Toggle cruise on/off; detect travel direction when starting
                 if not CruiseActive then
                     -- detect current signed speed of the train
-                    local signedSpeed = 0.0
-                    if MyTrain and MyTrain ~= 0 then
-                        local vel = GetEntityVelocity(MyTrain)
-                        local fwd = GetEntityForwardVector(MyTrain)
-                        signedSpeed = vel.x * fwd.x + vel.y * fwd.y + vel.z * fwd.z
+                    local signedSpeed = GetCurrentTrainSignedSpeed()
+
+                    if math.abs(signedSpeed) <= 5.0 then
+                        Core.NotifyRightTip(_U('cruiseMinSpeed'), 4000)
+                        return
                     end
+
                     if signedSpeed > 0.01 then
                         CruiseDirection = 1
                         local detectedSpeed = math.floor(signedSpeed * 100) / 100
@@ -321,7 +451,6 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
                     stopCruise()
                     ForwardActive = false
                     BackwardActive = false
-                    DrivingMenuSpeed = 0
                 end
                 -- refresh menu to update cruise label
                 DrivingMenu(trainCfg, myTrainData, false)
@@ -336,6 +465,9 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
                     switched = false
                     Core.NotifyRightTip(_U('switchingOn'), 4000)
                 end
+            end,
+            ['triggerWhistle'] = function()
+                TriggerTrainWhistle(WHISTLE_SEQUENCES[WhistleSequenceIndex + 1])
             end,
             ['stopEngine'] = function()
                 Core.NotifyRightTip(_U('engineStopped'), 4000)
@@ -388,14 +520,25 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
         if selectedOption[data.current.value] then
             selectedOption[data.current.value]()
         else --has to be done this way to get a vector menu option
-            -- Check if trying to change speed from 0 without engine started
-            if not EngineStarted and data.current.value > 0 then
-                Core.NotifyRightTip(_U('engineMustBeStarted'), 4000)
-                DrivingMenuSpeed = 0
+            if data.current.tag == 'whistleSequence' then
+                local selectedIndex = math.floor(tonumber(data.current.value) or WhistleSequenceIndex)
+                WhistleSequenceIndex = math.max(0, math.min(selectedIndex, #WHISTLE_SEQUENCES - 1))
                 DrivingMenu(trainCfg, myTrainData, false)
             else
-                DrivingMenuSpeed = data.current.value
-                MaxSpeedCalc(DrivingMenuSpeed)
+                if CruiseActive then
+                    DrivingMenuSpeed = data.current.value
+                    return
+                end
+                -- Check if trying to change speed from 0 without engine started
+                if not EngineStarted and data.current.value > 0 then
+                    Core.NotifyRightTip(_U('engineMustBeStarted'), 4000)
+                    DrivingMenuSpeed = 0
+                    DrivingMenu(trainCfg, myTrainData, false)
+                else
+                    CancelCruiseHandoff()
+                    DrivingMenuSpeed = data.current.value
+                    MaxSpeedCalc(DrivingMenuSpeed)
+                end
             end
         end
     end)

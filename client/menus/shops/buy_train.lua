@@ -11,7 +11,7 @@ end
 
 -- Initialize sorted train lists
 local function InitializeSortedTrains()
-    DBG.Info('Initializing sorted train lists')
+    DBG:Info('Initializing sorted train lists')
     local categories = {
         cargo = Cargo,
         passenger = Passenger,
@@ -35,9 +35,9 @@ local function InitializeSortedTrains()
             return naturalSort(a.config.label, b.config.label)
         end)
 
-        DBG.Info(string.format('Category %s: %d trains loaded', categoryName, #SortedTrains[categoryName]))
+        DBG:Info(string.format('Category %s: %d trains loaded', categoryName, #SortedTrains[categoryName]))
     end
-    DBG.Success('Sorted train lists initialized successfully')
+    DBG:Success('Sorted train lists initialized successfully')
 end
 
 -- Initialize sorted lists when script loads
@@ -68,7 +68,7 @@ local function FormatPrice(trainCfg, currencyType)
 end
 
 function BuyTrainsMenu(station)
-    DBG.Info(string.format('Opening buy trains menu for station: %s', tostring(station)))
+    DBG:Info(string.format('Opening buy trains menu for station: %s', tostring(station)))
     local BuyTrainsPage = TrainShopMenu:RegisterPage('buyTrains:page')
     local stationCfg = Stations[station]
 
@@ -158,7 +158,7 @@ function BuyTrainsMenu(station)
 end
 
 function TrainsMenu(category, station)
-    DBG.Info(string.format('Opening trains menu - Category: %s, Station: %s', tostring(category), tostring(station)))
+    DBG:Info(string.format('Opening trains menu - Category: %s, Station: %s', tostring(category), tostring(station)))
     local TrainsPage = TrainShopMenu:RegisterPage('trains:page')
     local stationCfg = Stations[station]
 
@@ -185,10 +185,10 @@ function TrainsMenu(category, station)
     })
 
     -- Get job-filtered trains for this category
-    DBG.Info(string.format('Requesting job-filtered trains for category: %s', tostring(category)))
+    DBG:Info(string.format('Requesting job-filtered trains for category: %s', tostring(category)))
     local jobFilteredTrains = Core.Callback.TriggerAwait('bcc-train:GetJobFilteredTrains', category)
     if not jobFilteredTrains or next(jobFilteredTrains) == nil then
-        DBG.Warning(string.format('No trains available in category %s for player job', tostring(category)))
+        DBG:Warning(string.format('No trains available in category %s for player job', tostring(category)))
         TrainsPage:RegisterElement('textdisplay', {
             value = _U('noTrainForJob'),
             slot = 'content',
@@ -200,7 +200,7 @@ function TrainsMenu(category, station)
         return
     end
 
-    DBG.Success(string.format('Received %d job-filtered trains', #jobFilteredTrains or 0))
+    DBG:Success(string.format('Received %d job-filtered trains', #jobFilteredTrains or 0))
 
     -- Create sorted list from job-filtered trains
     local sortedTrains = {}
@@ -216,7 +216,7 @@ function TrainsMenu(category, station)
         return naturalSort(a.config.label, b.config.label)
     end)
 
-    DBG.Info(string.format('Displaying %d sorted trains in menu', #sortedTrains))
+    DBG:Info(string.format('Displaying %d sorted trains in menu', #sortedTrains))
 
     -- Add sorted trains to menu
     for _, trainData in ipairs(sortedTrains) do
@@ -230,7 +230,7 @@ function TrainsMenu(category, station)
         }, function(data)
             DeletePreviewTrain()
             local hash = data.id
-            DBG.Info(string.format('Train selected for preview - Hash: %s', tostring(hash)))
+            DBG:Info(string.format('Train selected for preview - Hash: %s', tostring(hash)))
             -- Spawn new preview train using station spawn coordinates with normal direction
             PreviewTrain = SpawnPreviewTrainWithDirection(tonumber(hash), station, false)
             PurchaseMenu(hash, category, station)
@@ -280,7 +280,7 @@ function TrainsMenu(category, station)
 end
 
 function PurchaseMenu(modelHash, category, station)
-    DBG.Info(string.format('Opening purchase menu - Model: %s, Category: %s, Station: %s', tostring(modelHash), tostring(category), tostring(station)))
+    DBG:Info(string.format('Opening purchase menu - Model: %s, Category: %s, Station: %s', tostring(modelHash), tostring(category), tostring(station)))
     local PurchasePage = TrainShopMenu:RegisterPage('trains:page')
     local stationCfg = Stations[station]
     local currencyType = stationCfg.shop.currency
@@ -288,7 +288,7 @@ function PurchaseMenu(modelHash, category, station)
     if currencyType == 1 then
         selectedCurrency = 'gold' -- Force gold if config is gold only
     end
-    DBG.Info(string.format('Currency type: %d, Default selection: %s', currencyType, selectedCurrency))
+    DBG:Info(string.format('Currency type: %d, Default selection: %s', currencyType, selectedCurrency))
 
     PurchasePage:RegisterElement('header', {
         value = stationCfg.shop.name,
@@ -371,7 +371,7 @@ function PurchaseMenu(modelHash, category, station)
             persist = false,
         }, function(data)
             selectedCurrency = data.value.extra
-            DBG.Info(string.format('Currency selection changed to: %s', tostring(selectedCurrency)))
+            DBG:Info(string.format('Currency selection changed to: %s', tostring(selectedCurrency)))
         end)
     end
 
@@ -398,7 +398,7 @@ function PurchaseMenu(modelHash, category, station)
         DeletePreviewTrain()
         local hash = data.id
         local trainName = inputValue and inputValue ~= '' and inputValue or nil -- Send name if provided
-        DBG.Info(string.format('Purchase initiated - Hash: %s, Currency: %s, Name: %s', tostring(hash), tostring(selectedCurrency), tostring(trainName or 'default')))
+        DBG:Info(string.format('Purchase initiated - Hash: %s, Currency: %s, Name: %s', tostring(hash), tostring(selectedCurrency), tostring(trainName or 'default')))
         TriggerServerEvent('bcc-train:BuyTrain', hash, selectedCurrency, trainName, station)
         ShopMenu(station)
     end)

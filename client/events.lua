@@ -16,11 +16,11 @@ end)
 
 RegisterCommand(OpenInv, function()
     local isInTrain = IsPedInAnyTrain(PlayerPedId())
-    DBG.Info('Open train inventory command triggered. Is in train: ' .. tostring(isInTrain))
+    DBG:Info('Open train inventory command triggered. Is in train: ' .. tostring(isInTrain))
     if isInTrain and TrainId and TrainId > 0 then
         TriggerServerEvent('bcc-train:OpenInventory', TrainId)
     else
-        DBG.Warning('Cannot open train inventory: not in train or no TrainId')
+        DBG:Warning('Cannot open train inventory: not in train or no TrainId')
     end
 end, false)
 
@@ -39,13 +39,13 @@ end)
 RegisterNetEvent('bcc-train:StartLockpick', function(trainId)
     -- Validate trainId parameter
     if not trainId or type(trainId) ~= 'number' then
-        DBG.Error(string.format('Invalid trainId provided for lockpick: %s', tostring(trainId)))
+        DBG:Error(string.format('Invalid trainId provided for lockpick: %s', tostring(trainId)))
         return
     end
 
     -- Validate config exists
     if not Config.lockPick then
-        DBG.Error('Lockpick configuration not found')
+        DBG:Error('Lockpick configuration not found')
         return
     end
 
@@ -86,7 +86,7 @@ RegisterNetEvent('bcc-train:StartLockpick', function(trainId)
 
     MiniGame.Start('lockpick', cfg, function(result)
         if not result then
-            DBG.Error('Lockpick minigame returned nil result')
+            DBG:Error('Lockpick minigame returned nil result')
             Core.NotifyRightTip(_U('pickAttemptFailed'), 4000)
             TriggerServerEvent('bcc-train:ConsumeLockpick')
             return

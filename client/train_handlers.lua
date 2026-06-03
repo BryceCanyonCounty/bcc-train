@@ -102,7 +102,7 @@ local function startPeriodicTrainStat(statName, getValueFn, setValueFn, cfgField
                         DrivingMenu(trainCfg, myTrainData, false)
                     end
                 else
-                    DBG.Error('Failed to update train ' .. statName)
+                    DBG:Error('Failed to update train ' .. statName)
                 end
             else
                 -- Ensure train won't move if engine isn't started or stat is depleted

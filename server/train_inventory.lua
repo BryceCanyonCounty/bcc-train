@@ -5,13 +5,13 @@ Core.Callback.Register('bcc-train:CheckDeliveryItems', function(source, cb, dest
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb({ hasItems = false, missingItems = {}, error = 'User not found' })
     end
 
     -- Handle invalid destination
     if not destination then
-        DBG.Error('CheckDeliveryItems called without destination')
+        DBG:Error('CheckDeliveryItems called without destination')
         return cb({ hasItems = false, missingItems = {}, error = 'Invalid destination' })
     end
 
@@ -49,20 +49,20 @@ RegisterNetEvent('bcc-train:OpenInventory', function(isInTrain)
     local src = source
     local user = Core.getUser(src)
 
-    DBG.Info('bcc-train:OpenInventory called')
+    DBG:Info('bcc-train:OpenInventory called')
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
     -- Debug: Show all trains in ActiveTrains table
     if DevModeActive then
-        DBG.Info(string.format('ActiveTrains count: %d', #ActiveTrains))
+        DBG:Info(string.format('ActiveTrains count: %d', #ActiveTrains))
         for i, train in ipairs(ActiveTrains) do
             local entity = NetworkGetEntityFromNetworkId(train.netId)
             local exists = DoesEntityExist(entity)
-            DBG.Info(string.format('Train %d: ID=%s, NetID=%s, EntityExists=%s', i, tostring(train.id),
+            DBG:Info(string.format('Train %d: ID=%s, NetID=%s, EntityExists=%s', i, tostring(train.id),
                 tostring(train.netId), tostring(exists)))
         end
     end
@@ -84,7 +84,7 @@ RegisterNetEvent('bcc-train:OpenInventory', function(isInTrain)
                 if train.netId == playerVehicleNetId then
                     targetTrain = train
                     targetDist = 0 -- Player is inside the train
-                    DBG.Info(string.format('Player is in train ID: %s', tostring(train.id)))
+                    DBG:Info(string.format('Player is in train ID: %s', tostring(train.id)))
                     break
                 end
             end
@@ -97,19 +97,19 @@ RegisterNetEvent('bcc-train:OpenInventory', function(isInTrain)
             local entity = NetworkGetEntityFromNetworkId(train.netId)
             if DoesEntityExist(entity) then
                 local dist = #(playerCoords - GetEntityCoords(entity))
-                DBG.Info(string.format('Checking train ID %s: distance=%.2f', tostring(train.id), dist))
+                DBG:Info(string.format('Checking train ID %s: distance=%.2f', tostring(train.id), dist))
                 if dist < targetDist then
                     targetDist = dist
                     targetTrain = train
                 end
             else
-                DBG.Warning(string.format('Train ID %s exists in ActiveTrains but entity does not exist!',
+                DBG:Warning(string.format('Train ID %s exists in ActiveTrains but entity does not exist!',
                     tostring(train.id)))
             end
         end
     end
 
-    DBG.Info(string.format('Target train ID: %s at distance: %.2f', targetTrain and tostring(targetTrain.id) or 'None', targetDist))
+    DBG:Info(string.format('Target train ID: %s at distance: %.2f', targetTrain and tostring(targetTrain.id) or 'None', targetDist))
 
     -- Allow access if player is in train (driving) or within distance
     local canAccess = isInTrain or (targetTrain and targetDist <= 5)
@@ -118,7 +118,7 @@ RegisterNetEvent('bcc-train:OpenInventory', function(isInTrain)
         -- Get train configuration and ownership info
         local trainData = MySQL.query.await('SELECT * FROM `bcc_player_trains` WHERE `trainid` = ?', { targetTrain.id })
         if not trainData or #trainData == 0 then
-            DBG.Error(string.format('Train data not found for train ID: %s', tostring(targetTrain.id)))
+            DBG:Error(string.format('Train data not found for train ID: %s', tostring(targetTrain.id)))
             return
         end
 
@@ -129,7 +129,7 @@ RegisterNetEvent('bcc-train:OpenInventory', function(isInTrain)
         local trainCfg = GetTrainConfig(trainInfo.trainModel)
 
         if not trainCfg then
-            DBG.Error(string.format('Train configuration not found for train ID: %s (model: %s)',
+            DBG:Error(string.format('Train configuration not found for train ID: %s (model: %s)',
                 tostring(targetTrain.id), tostring(trainInfo.trainModel)))
             return
         end
@@ -168,7 +168,7 @@ RegisterNetEvent('bcc-train:OpenInventoryAfterLockpick', function(id)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
@@ -182,7 +182,7 @@ RegisterNetEvent('bcc-train:ConsumeLockpick', function()
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
@@ -203,9 +203,9 @@ RegisterNetEvent('bcc-train:ConsumeLockpick', function()
         for _, item in ipairs(Config.lockpickItem) do
             local itemCount = exports.vorp_inventory:getItemCount(src, nil, item)
             if itemCount >= 1 then
-                DBG.Info(string.format('Consuming lockpick: src=%s item=%s', tostring(src), tostring(item)))
+                DBG:Info(string.format('Consuming lockpick: src=%s item=%s', tostring(src), tostring(item)))
                 exports.vorp_inventory:subItem(src, item, 1)
-                DBG.Info(string.format('Requested lockpick removal: src=%s item=%s', tostring(src), tostring(item)))
+                DBG:Info(string.format('Requested lockpick removal: src=%s item=%s', tostring(src), tostring(item)))
                 Core.NotifyRightTip(src, _U('lockpickBroke'), 4000)
                 break
             end

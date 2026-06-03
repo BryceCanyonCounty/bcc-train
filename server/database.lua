@@ -1,5 +1,10 @@
----@type BCCTrainDebugLib
-local DBG = BCCTrainDebug
+BccUtils = exports['bcc-utils'].initiate()
+DBG = BccUtils.Debug:Get('bcc-train', Config.devMode.active)
+
+if DBG then
+    DBG:Enable()
+    DBG:Info('Train debug initialized')
+end
 
 local SEED_VERSION = 1
 
@@ -170,7 +175,7 @@ local MODEL_NAME_TO_HEX = {
 -- Migrate train models from string names to hex hashes
 local function migrateTrainModels()
     if not waitForDB() then
-        DBG.Warning('Database not available; cannot migrate train models.')
+        DBG:Warning('Database not available; cannot migrate train models.')
         return
     end
 
@@ -182,22 +187,22 @@ local function migrateTrainModels()
     if oldTableExists and #oldTableExists > 0 then
         if not newTableExists or #newTableExists == 0 then
             -- Scenario 1: Old table exists, new doesn't - rename it
-            DBG.Info('Renaming train table to bcc_player_trains')
+            DBG:Info('Renaming train table to bcc_player_trains')
             local renameResult = dbExecuteAwait('RENAME TABLE train TO bcc_player_trains')
             if renameResult then
-                DBG.Success('Successfully renamed train table to bcc_player_trains')
+                DBG:Success('Successfully renamed train table to bcc_player_trains')
             else
-                DBG.Error('Failed to rename train table to bcc_player_trains')
+                DBG:Error('Failed to rename train table to bcc_player_trains')
                 return
             end
         else
             -- Scenario 2: Both tables exist - copy data from old to new, then drop old
-            DBG.Info('Both train and bcc_player_trains tables exist - migrating data')
+            DBG:Info('Both train and bcc_player_trains tables exist - migrating data')
 
             -- Check if old table has data
             local oldData = dbQueryAwait('SELECT COUNT(*) as count FROM train')
             if oldData and oldData[1] and oldData[1].count > 0 then
-                DBG.Info(string.format('Found %d records in old train table to migrate', oldData[1].count))
+                DBG:Info(string.format('Found %d records in old train table to migrate', oldData[1].count))
 
                 -- Copy data from old table to new table
                 local copyResult = dbExecuteAwait([[
@@ -207,44 +212,44 @@ local function migrateTrainModels()
                 ]])
 
                 if copyResult then
-                    DBG.Success('Successfully copied data from train to bcc_player_trains')
+                    DBG:Success('Successfully copied data from train to bcc_player_trains')
 
                     -- Drop the old table
                     local dropResult = dbExecuteAwait('DROP TABLE train')
                     if dropResult then
-                        DBG.Success('Successfully dropped old train table')
+                        DBG:Success('Successfully dropped old train table')
                     else
-                        DBG.Warning('Failed to drop old train table - you may want to drop it manually')
+                        DBG:Warning('Failed to drop old train table - you may want to drop it manually')
                     end
                 else
-                    DBG.Error('Failed to copy data from old train table')
+                    DBG:Error('Failed to copy data from old train table')
                     return
                 end
             else
-                DBG.Info('Old train table is empty - dropping it')
+                DBG:Info('Old train table is empty - dropping it')
                 local dropResult = dbExecuteAwait('DROP TABLE train')
                 if dropResult then
-                    DBG.Success('Successfully dropped empty old train table')
+                    DBG:Success('Successfully dropped empty old train table')
                 else
-                    DBG.Warning('Failed to drop old train table')
+                    DBG:Warning('Failed to drop old train table')
                 end
             end
         end
     elseif not newTableExists or #newTableExists == 0 then
-        DBG.Info('No train tables exist; skipping migration.')
+        DBG:Info('No train tables exist; skipping migration.')
         return
     else
-        DBG.Info('bcc_player_trains table already exists, old train table not found')
+        DBG:Info('bcc_player_trains table already exists, old train table not found')
     end
 
     -- Get all train records that need migration (not already hex format)
     local trainRecords = dbQueryAwait('SELECT trainid, trainModel FROM bcc_player_trains WHERE trainModel NOT LIKE "0x%"')
     if not trainRecords or #trainRecords == 0 then
-        DBG.Info('No train models need migration.')
+        DBG:Info('No train models need migration.')
         return
     end
 
-    DBG.Info(string.format('Found %d train records to migrate', #trainRecords))
+    DBG:Info(string.format('Found %d train records to migrate', #trainRecords))
 
     local migrated = 0
     local skipped = 0
@@ -258,18 +263,18 @@ local function migrateTrainModels()
             local updateResult = dbExecuteAwait('UPDATE bcc_player_trains SET trainModel = ? WHERE trainid = ?', { hexHash, trainId })
 
             if updateResult then
-                DBG.Info(string.format('Migrated train ID %d: "%s" -> %s', trainId, currentModel, hexHash))
+                DBG:Info(string.format('Migrated train ID %d: "%s" -> %s', trainId, currentModel, hexHash))
                 migrated = migrated + 1
             else
-                DBG.Error(string.format('Failed to migrate train ID %d', trainId))
+                DBG:Error(string.format('Failed to migrate train ID %d', trainId))
             end
         else
-            DBG.Warning(string.format('Unknown model "%s" for train ID %d - skipping', currentModel, trainId))
+            DBG:Warning(string.format('Unknown model "%s" for train ID %d - skipping', currentModel, trainId))
             skipped = skipped + 1
         end
     end
 
-    DBG.Success(string.format('Migration complete: %d migrated, %d skipped', migrated, skipped))
+    DBG:Success(string.format('Migration complete: %d migrated, %d skipped', migrated, skipped))
 end
 
 -----------------------------------------------------
@@ -278,33 +283,33 @@ end
 
 local function addNameColumnToTrains()
     if not waitForDB() then
-        DBG.Warning('Database not available; cannot add name column.')
+        DBG:Warning('Database not available; cannot add name column.')
         return
     end
 
     -- Check if bcc_player_trains table exists
     local tableExists = dbQueryAwait("SHOW TABLES LIKE 'bcc_player_trains'")
     if not tableExists or #tableExists == 0 then
-        DBG.Info('bcc_player_trains table does not exist; skipping name column migration.')
+        DBG:Info('bcc_player_trains table does not exist; skipping name column migration.')
         return
     end
 
     -- Check if name column already exists
     local columnExists = dbQueryAwait("SHOW COLUMNS FROM bcc_player_trains LIKE 'name'")
     if columnExists and #columnExists > 0 then
-        DBG.Info('Name column already exists in bcc_player_trains table.')
+        DBG:Info('Name column already exists in bcc_player_trains table.')
         return
     end
 
     -- Add the name column
     local addColumnResult = dbExecuteAwait('ALTER TABLE bcc_player_trains ADD COLUMN name VARCHAR(100) DEFAULT NULL AFTER trainModel')
     if addColumnResult then
-        DBG.Success('Successfully added name column to bcc_player_trains table')
+        DBG:Success('Successfully added name column to bcc_player_trains table')
 
         -- Update existing trains with default names based on their train config
         local existingTrains = dbQueryAwait('SELECT trainid, trainModel FROM bcc_player_trains WHERE name IS NULL')
         if existingTrains and #existingTrains > 0 then
-            DBG.Info(string.format('Setting default names for %d existing trains', #existingTrains))
+            DBG:Info(string.format('Setting default names for %d existing trains', #existingTrains))
 
             for _, train in ipairs(existingTrains) do
                 local trainConfig = (Cargo and Cargo[train.trainModel]) or
@@ -316,31 +321,31 @@ local function addNameColumnToTrains()
                 dbExecuteAwait('UPDATE bcc_player_trains SET name = ? WHERE trainid = ?', { defaultName, train.trainid })
             end
 
-            DBG.Success('Default names set for existing trains')
+            DBG:Success('Default names set for existing trains')
         end
     else
-        DBG.Error('Failed to add name column to bcc_player_trains table')
+        DBG:Error('Failed to add name column to bcc_player_trains table')
     end
 end
 
 local function runDatabaseMigrations()
     if not waitForDB() then
-        DBG.Warning('Database not available; cannot run migrations.')
+        DBG:Warning('Database not available; cannot run migrations.')
         return
     end
 
     local currentVersion = 0
     local ok, err = pcall(function() currentVersion = getMigrationVersion() end)
     if not ok then
-        DBG.Warning(string.format('Failed to get migration version: %s', tostring(err)))
+        DBG:Warning(string.format('Failed to get migration version: %s', tostring(err)))
         currentVersion = 0
     end
 
-    DBG.Info(string.format('Current database version: %d, Target version: %d', currentVersion, SEED_VERSION))
+    DBG:Info(string.format('Current database version: %d, Target version: %d', currentVersion, SEED_VERSION))
 
     -- Migration version 1: Complete train system setup (table rename + hex hashes + name column)
     if currentVersion < 1 then
-        DBG.Info('Running migration 1: Table rename, train model hex hash conversion and name column setup')
+        DBG:Info('Running migration 1: Table rename, train model hex hash conversion and name column setup')
 
         -- Run train model migration (includes table rename)
         migrateTrainModels()
@@ -349,50 +354,50 @@ local function runDatabaseMigrations()
         addNameColumnToTrains()
     end    -- Set the current version
     pcall(function() setMigrationVersion(SEED_VERSION) end)
-    DBG.Success(string.format('Database migrations complete. Version set to %d', SEED_VERSION))
+    DBG:Success(string.format('Database migrations complete. Version set to %d', SEED_VERSION))
 end
 
 local function seedItems(force)
     if not Config then
-        DBG.Warning('Config missing; cannot determine autoSeedDatabase setting. Skipping seeding.')
+        DBG:Warning('Config missing; cannot determine autoSeedDatabase setting. Skipping seeding.')
         return
     end
     if Config.autoSeedDatabase == false and not force then
-        DBG.Info('autoSeedDatabase disabled in config; skipping DB seeding.')
+        DBG:Info('autoSeedDatabase disabled in config; skipping DB seeding.')
         return
     end
     if not waitForDB() then
-        DBG.Warning('Database not available after retries; skipping seeding.')
+        DBG:Warning('Database not available after retries; skipping seeding.')
         return
     end
     local currentVersion = 0
     local ok, err = pcall(function() currentVersion = getMigrationVersion() end)
     if not ok then
-        DBG.Warning(string.format('Failed to get migration version: %s', tostring(err)))
+        DBG:Warning(string.format('Failed to get migration version: %s', tostring(err)))
         currentVersion = 0
     end
     if currentVersion >= SEED_VERSION and not force then
-        DBG.Info(string.format('Items already seeded (version %s), skipping.', tostring(currentVersion)))
+        DBG:Info(string.format('Items already seeded (version %s), skipping.', tostring(currentVersion)))
         return
     end
-    DBG.Info('Seeding items...')
+    DBG:Info('Seeding items...')
     for _, item in ipairs(ITEMS) do
         local ok2, res = pcall(function()
             return dbExecuteAwait(UPSERT_SQL, { item[1], item[2], item[3], item[4], item[5], item[6], item[7] })
         end)
         if not ok2 then
-            DBG.Error(string.format('Failed to upsert item %s: %s', tostring(item[1]), tostring(res)))
+            DBG:Error(string.format('Failed to upsert item %s: %s', tostring(item[1]), tostring(res)))
         else
-            DBG.Info(string.format('Upserted item: %s', tostring(item[1])))
+            DBG:Info(string.format('Upserted item: %s', tostring(item[1])))
         end
     end
     pcall(function() setMigrationVersion(SEED_VERSION) end)
-    DBG.Info(string.format('Seeding complete; set seed version to %s', tostring(SEED_VERSION)))
+    DBG:Info(string.format('Seeding complete; set seed version to %s', tostring(SEED_VERSION)))
 end
 
 RegisterCommand('bcc-train:seed', function(source, args, raw)
     if source ~= 0 then
-        DBG.Warning('bcc-train:seed can only be run from server console')
+        DBG:Warning('bcc-train:seed can only be run from server console')
         return
     end
     seedItems(true)
@@ -400,11 +405,11 @@ end, true)
 
 RegisterCommand('bcc-train:verify', function(source, args, raw)
     if source ~= 0 then
-        DBG.Warning('bcc-train:verify can only be run from server console')
+        DBG:Warning('bcc-train:verify can only be run from server console')
         return
     end
     if not waitForDB() then
-        DBG.Warning('Database not available; cannot verify items.')
+        DBG:Warning('Database not available; cannot verify items.')
         return
     end
     local missing = {}
@@ -415,15 +420,15 @@ RegisterCommand('bcc-train:verify', function(source, args, raw)
         end
     end
     if #missing == 0 then
-        DBG.Info('All items present in the items table.')
+        DBG:Info('All items present in the items table.')
     else
-        DBG.Warning(string.format('Missing items: %s', table.concat(missing, ', ')))
+        DBG:Warning(string.format('Missing items: %s', table.concat(missing, ', ')))
     end
 end, true)
 
 RegisterCommand('bcc-train:migrate', function(source, args, raw)
     if source ~= 0 then
-        DBG.Warning('bcc-train:migrate can only be run from server console')
+        DBG:Warning('bcc-train:migrate can only be run from server console')
         return
     end
     runDatabaseMigrations()
@@ -437,7 +442,7 @@ AddEventHandler('onResourceStart', function(resourceName)
         -- Run database migrations FIRST (this handles table creation/rename)
         local migrationOk, migrationErr = pcall(runDatabaseMigrations)
         if not migrationOk then
-            DBG.Warning(string.format('Failed to run database migrations: %s', tostring(migrationErr)))
+            DBG:Warning(string.format('Failed to run database migrations: %s', tostring(migrationErr)))
         end
 
         -- Only ensure schema if migration didn't handle it
@@ -445,7 +450,7 @@ AddEventHandler('onResourceStart', function(resourceName)
         if not tableExists or #tableExists == 0 then
             local ok, err = pcall(ensureTrainSchema)
             if not ok then
-                DBG.Warning(string.format('Failed to ensure train schema: %s', tostring(err)))
+                DBG:Warning(string.format('Failed to ensure train schema: %s', tostring(err)))
             end
         end
 

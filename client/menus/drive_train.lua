@@ -489,7 +489,7 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
                     TrainFuel = fuel
                     DrivingMenu(trainCfg, myTrainData, false)
                 else
-                    DBG.Error('Failed to fuel train')
+                    DBG:Error('Failed to fuel train')
                 end
             end,
             ['repair'] = function()
@@ -503,7 +503,7 @@ function DrivingMenu(trainCfg, myTrainData, freshOpen)
                     TrainCondition = cond
                     DrivingMenu(trainCfg, myTrainData, false)
                 else
-                    DBG.Error('Failed to repair train')
+                    DBG:Error('Failed to repair train')
                 end
             end,
             ['startEngine'] = function()

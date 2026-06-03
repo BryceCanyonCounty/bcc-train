@@ -23,12 +23,12 @@ local function startDeliveryMission(source, destinationKey)
 
     -- Look up actual destination config from server-side DeliveryLocations
     if type(destinationKey) ~= 'string' or not DeliveryLocations[destinationKey] then
-        DBG.Error(string.format('Invalid or missing destination key: %s', tostring(destinationKey)))
+        DBG:Error(string.format('Invalid or missing destination key: %s', tostring(destinationKey)))
         return false
     end
 
     local destination = DeliveryLocations[destinationKey]
-    DBG.Info(string.format('Looking up destination from server config: %s', tostring(destinationKey)))
+    DBG:Info(string.format('Looking up destination from server config: %s', tostring(destinationKey)))
 
     local user = Core.getUser(source)
     if not user then
@@ -42,7 +42,7 @@ local function startDeliveryMission(source, destinationKey)
 
     -- Check if destination requires items (from server config only)
     if destination.requireItem and destination.items and type(destination.items) == 'table' then
-        DBG.Info(string.format('Mission requires items: %d items configured', #destination.items))
+        DBG:Info(string.format('Mission requires items: %d items configured', #destination.items))
         for _, requiredItem in ipairs(destination.items) do
             local itemCount = exports.vorp_inventory:getItemCount(source, nil, requiredItem.item)
             if itemCount < requiredItem.quantity then
@@ -54,9 +54,9 @@ local function startDeliveryMission(source, destinationKey)
 
         -- Remove required items from inventory
         for _, requiredItem in ipairs(destination.items) do
-            DBG.Info(string.format('Removing item for mission start: src=%s item=%s qty=%s', tostring(source), tostring(requiredItem.item), tostring(requiredItem.quantity)))
+            DBG:Info(string.format('Removing item for mission start: src=%s item=%s qty=%s', tostring(source), tostring(requiredItem.item), tostring(requiredItem.quantity)))
             exports.vorp_inventory:subItem(source, requiredItem.item, requiredItem.quantity)
-            DBG.Info(string.format('Requested removal: src=%s item=%s qty=%s', tostring(source), tostring(requiredItem.item), tostring(requiredItem.quantity)))
+            DBG:Info(string.format('Requested removal: src=%s item=%s qty=%s', tostring(source), tostring(requiredItem.item), tostring(requiredItem.quantity)))
         end
 
         Core.NotifyRightTip(source, _U('deliveryItemsConsumed'), 3000)
@@ -71,56 +71,56 @@ local function startDeliveryMission(source, destinationKey)
         completed = false
     }
 
-    DBG.Info(string.format('Started delivery mission for player %s to %s (key: %s)', tostring(source), tostring(destination.name or 'unknown'), tostring(destinationKey)))
+    DBG:Info(string.format('Started delivery mission for player %s to %s (key: %s)', tostring(source), tostring(destination.name or 'unknown'), tostring(destinationKey)))
     return true
 end
 
 local function validateAndCompleteDeliveryMission(source)
     if not source then
-        DBG.Error('Invalid source for delivery validation')
+        DBG:Error('Invalid source for delivery validation')
         return false
     end
 
     -- Get current character for validation
     local user = Core.getUser(source)
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(source)))
+        DBG:Error(string.format('User not found for source: %s', tostring(source)))
         return false
     end
 
     local character = user.getUsedCharacter
     if not character then
-        DBG.Error('Character not found for user')
+        DBG:Error('Character not found for user')
         return false
     end
 
     local mission = ActiveMissions[source]
     if not mission then
-        DBG.Warning(string.format('No active mission found for player %s', tostring(source)))
+        DBG:Warning(string.format('No active mission found for player %s', tostring(source)))
         return false
     end
 
     -- Verify the character attempting to complete is the same one that started the mission
     if mission.charIdentifier ~= character.charIdentifier then
-        DBG.Warning(string.format('Character mismatch: mission started by %s but completion attempted by %s', tostring(mission.charIdentifier), tostring(character.charIdentifier)))
+        DBG:Warning(string.format('Character mismatch: mission started by %s but completion attempted by %s', tostring(mission.charIdentifier), tostring(character.charIdentifier)))
         Core.NotifyRightTip(source, _U('notYourMission'), 4000)
         return false
     end
 
     if mission.type ~= 'delivery' then
-        DBG.Warning(string.format('Player %s attempted to complete wrong mission type', tostring(source)))
+        DBG:Warning(string.format('Player %s attempted to complete wrong mission type', tostring(source)))
         return false
     end
 
     if mission.completed then
-        DBG.Warning(string.format('Player %s attempted to complete already completed mission', tostring(source)))
+        DBG:Warning(string.format('Player %s attempted to complete already completed mission', tostring(source)))
         return false
     end
 
     -- Basic validation - ensure destination matches and mission isn't too old (prevent replay attacks)
     local maxMissionTime = 3600 -- 1 hour maximum mission time
     if os.time() - mission.startTime > maxMissionTime then
-        DBG.Warning(string.format('Mission expired for player %s', tostring(source)))
+        DBG:Warning(string.format('Mission expired for player %s', tostring(source)))
         Core.NotifyRightTip(source, _U('missionExpired'), 4000)
         ActiveMissions[source] = nil
         return false
@@ -128,7 +128,7 @@ local function validateAndCompleteDeliveryMission(source)
 
     -- Mark mission as completed
     mission.completed = true
-    DBG.Info(string.format('Validated delivery mission completion for player %s (char: %s)', tostring(source), tostring(character.charIdentifier)))
+    DBG:Info(string.format('Validated delivery mission completion for player %s (char: %s)', tostring(source), tostring(character.charIdentifier)))
     return true
 end
 
@@ -138,7 +138,7 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
 
     -- Validate user exists
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
@@ -153,19 +153,19 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
     -- Get mission data to look up destination from server config
     local mission = ActiveMissions[src]
     if not mission or not mission.destinationKey then
-        DBG.Error('Mission data missing or invalid for delivery pay')
+        DBG:Error('Mission data missing or invalid for delivery pay')
         return
     end
 
     -- Look up destination from server-side config using stored key
     local destination = DeliveryLocations[mission.destinationKey]
     if not destination or not destination.rewards or type(destination.rewards) ~= 'table' then
-        DBG.Error(string.format('Invalid destination config for key: %s', tostring(mission.destinationKey)))
+        DBG:Error(string.format('Invalid destination config for key: %s', tostring(mission.destinationKey)))
         return
     end
 
     local rewards = destination.rewards
-    DBG.Info(string.format('Awarding rewards from server config for destination: %s', tostring(mission.destinationKey)))
+    DBG:Info(string.format('Awarding rewards from server config for destination: %s', tostring(mission.destinationKey)))
 
     -- If the mission has previewRewards (precomputed when client accepted), use them
     local cashAmount = 0
@@ -183,7 +183,7 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
             if type(rewards.cash) == 'table' and rewards.cash.min and rewards.cash.max then
                 cashAmount = math.random(rewards.cash.min, rewards.cash.max)
             else
-                DBG.Error('Invalid rewards.cash format - must be table with min/max properties')
+                DBG:Error('Invalid rewards.cash format - must be table with min/max properties')
             end
         end
 
@@ -192,12 +192,12 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
             if type(rewards.gold) == 'table' and rewards.gold.min and rewards.gold.max then
                 goldAmount = math.random(rewards.gold.min, rewards.gold.max)
             else
-                DBG.Error('Invalid rewards.gold format - must be table with min/max properties')
+                DBG:Error('Invalid rewards.gold format - must be table with min/max properties')
             end
         end
 
         if rewards.items and type(rewards.items) ~= 'table' then
-            DBG.Error('Invalid rewards.items type in server config')
+            DBG:Error('Invalid rewards.items type in server config')
             return
         end
     end
@@ -210,14 +210,14 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
     if cashAmount > 0 then
         character.addCurrency(0, cashAmount)
         table.insert(rewardMessages, string.format('$%s %s', tostring(cashAmount), _U('currencyCash')))
-        DBG.Info(string.format('Awarded cash to src=%s amount=%s', tostring(src), tostring(cashAmount)))
+        DBG:Info(string.format('Awarded cash to src=%s amount=%s', tostring(src), tostring(cashAmount)))
     end
 
     -- Award gold
     if goldAmount > 0 then
         character.addCurrency(1, goldAmount)
         table.insert(rewardMessages, string.format('%s %s', tostring(goldAmount), _U('currencyGold')))
-        DBG.Info(string.format('Awarded gold to src=%s amount=%s', tostring(src), tostring(goldAmount)))
+        DBG:Info(string.format('Awarded gold to src=%s amount=%s', tostring(src), tostring(goldAmount)))
     end
 
     -- Award item rewards via inventory export if present, but only if the player can carry them
@@ -244,16 +244,16 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
                     if canCarry then
                         local success = exports.vorp_inventory:addItem(src, it.item, qty)
                         if success ~= false then
-                            DBG.Info(string.format('Awarded item to src=%s item=%s qty=%s', tostring(src), tostring(it.item), tostring(qty)))
+                            DBG:Info(string.format('Awarded item to src=%s item=%s qty=%s', tostring(src), tostring(it.item), tostring(qty)))
                             local label = it.label or tostring(it.item)
                             table.insert(awardedItems, string.format('%s x%d', label, qty))
                         else
                             table.insert(failedAwards, { item = it.item, label = it.label, quantity = qty, reason = 'Failed to add item' })
-                            DBG.Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=addItem returned false', tostring(src), tostring(it.item), tostring(qty)))
+                            DBG:Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=addItem returned false', tostring(src), tostring(it.item), tostring(qty)))
                         end
                     else
                         table.insert(failedAwards, { item = it.item, label = it.label, quantity = qty, reason = failReason })
-                        DBG.Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=%s', tostring(src), tostring(it.item), tostring(qty), tostring(failReason)))
+                        DBG:Warning(string.format('Failed to award item to src=%s item=%s qty=%s reason=%s', tostring(src), tostring(it.item), tostring(qty), tostring(failReason)))
                     end
                 end
             end
@@ -265,18 +265,18 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
         -- Send currency notification
         if #rewardMessages > 0 then
             local currencyMsg = _U('deliveryRewardsCurrency') .. ' ' .. table.concat(rewardMessages, ', ')
-            DBG.Info(string.format('Sending currency notification to src=%s: %s', tostring(src), currencyMsg))
+            DBG:Info(string.format('Sending currency notification to src=%s: %s', tostring(src), currencyMsg))
             Core.NotifyRightTip(src, currencyMsg, 5000)
         end
 
         -- Send item notification separately
         if #awardedItems > 0 then
             local itemMsg = _U('deliveryRewardsItems') .. ' ' .. table.concat(awardedItems, ', ')
-            DBG.Info(string.format('Sending item notification to src=%s: %s', tostring(src), itemMsg))
+            DBG:Info(string.format('Sending item notification to src=%s: %s', tostring(src), itemMsg))
             Core.NotifyRightTip(src, itemMsg, 5000)
         end
     else
-        DBG.Info(string.format('No rewards to notify for src=%s (rewardMessages=%d, awardedItems=%d)', tostring(src), #rewardMessages, #awardedItems))
+        DBG:Info(string.format('No rewards to notify for src=%s (rewardMessages=%d, awardedItems=%d)', tostring(src), #rewardMessages, #awardedItems))
     end
 
     -- Notify player about failed awards (items that couldn't fit in inventory)
@@ -287,7 +287,7 @@ RegisterNetEvent('bcc-train:DeliveryPay', function()
             table.insert(failedItemsList, string.format('%s x%d', label, f.quantity))
         end
         local msg = _U('couldNotAwardItemsHeader') .. ' ' .. table.concat(failedItemsList, ', ')
-        DBG.Warning(string.format('Sending failed awards notification to src=%s: %s', tostring(src), msg))
+        DBG:Warning(string.format('Sending failed awards notification to src=%s: %s', tostring(src), msg))
         Core.NotifyRightTip(src, msg, 6000)
     end
 
@@ -312,13 +312,13 @@ RegisterNetEvent('bcc-train:StartDeliveryMission', function(destinationKey)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
     -- Validate destination key parameter
     if not destinationKey or type(destinationKey) ~= 'string' then
-        DBG.Error('Invalid destination key provided for mission start')
+        DBG:Error('Invalid destination key provided for mission start')
         return
     end
 
@@ -336,7 +336,7 @@ RegisterNetEvent('bcc-train:StartDeliveryMission', function(destinationKey)
             return
         end
         if preview.destinationKey ~= destinationKey then
-            DBG.Warning(string.format('StartDeliveryMission destination mismatch for src=%s (preview=%s requested=%s)', tostring(src), tostring(preview.destinationKey), tostring(destinationKey)))
+            DBG:Warning(string.format('StartDeliveryMission destination mismatch for src=%s (preview=%s requested=%s)', tostring(src), tostring(preview.destinationKey), tostring(destinationKey)))
             Core.NotifyRightTip(src, _U('deliveryStartFailed'), 4000)
             return
         end
@@ -359,12 +359,12 @@ Core.Callback.Register('bcc-train:RequestDeliveryPreview', function(source, cb, 
     local src = source
     local user = Core.getUser(src)
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb(nil)
     end
 
     if not station or not Stations[station] then
-        DBG.Error('Invalid station provided for delivery preview')
+        DBG:Error('Invalid station provided for delivery preview')
         return cb(nil)
     end
 
@@ -416,13 +416,13 @@ Core.Callback.Register('bcc-train:StartDeliveryMission', function(source, cb, de
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb({ success = false, error = 'User not found' })
     end
 
     -- Validate destination key parameter
     if not destinationKey or type(destinationKey) ~= 'string' then
-        DBG.Error('Invalid destination key provided for mission start (callback)')
+        DBG:Error('Invalid destination key provided for mission start (callback)')
         return cb({ success = false, error = 'Invalid destination key' })
     end
 
@@ -443,7 +443,7 @@ Core.Callback.Register('bcc-train:StartDeliveryMission', function(source, cb, de
                     ActiveMissions[src].previewRewards = preview.rewards
                     PreviewMissions[src] = nil
                 else
-                    DBG.Warning(string.format('StartDeliveryMission (callback) preview mismatch for src=%s preview=%s requested=%s', tostring(src), tostring(preview and preview.destinationKey), tostring(destinationKey)))
+                    DBG:Warning(string.format('StartDeliveryMission (callback) preview mismatch for src=%s preview=%s requested=%s', tostring(src), tostring(preview and preview.destinationKey), tostring(destinationKey)))
                     -- continue without preview; do not fail the start solely for preview mismatch
                 end
             end
@@ -451,7 +451,7 @@ Core.Callback.Register('bcc-train:StartDeliveryMission', function(source, cb, de
         -- Look up and return full destination config from server (client needs it for display)
         local serverDestination = DeliveryLocations[destinationKey]
         if not serverDestination then
-            DBG.Error(string.format('Failed to look up destination config for key: %s', tostring(destinationKey)))
+            DBG:Error(string.format('Failed to look up destination config for key: %s', tostring(destinationKey)))
             return cb({ success = false, error = 'Failed to retrieve destination config' })
         end
         return cb({ success = true, destination = serverDestination })
@@ -465,13 +465,13 @@ RegisterNetEvent('bcc-train:SetPlayerCooldown', function(mission)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
     -- Validate mission parameter
     if not mission or type(mission) ~= 'string' then
-        DBG.Error('Invalid mission parameter provided for cooldown')
+        DBG:Error('Invalid mission parameter provided for cooldown')
         return
     end
 
@@ -484,19 +484,19 @@ Core.Callback.Register('bcc-train:CheckPlayerCooldown', function(source, cb, mis
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb(false)
     end
 
     -- Validate mission parameter
     if not mission or type(mission) ~= 'string' then
-        DBG.Error('Invalid mission parameter provided for cooldown check')
+        DBG:Error('Invalid mission parameter provided for cooldown check')
         return cb(false)
     end
 
     -- Validate config exists
     if not Config.cooldown or not Config.cooldown[mission] then
-        DBG.Error(string.format('Cooldown configuration not found for mission: %s', mission))
+        DBG:Error(string.format('Cooldown configuration not found for mission: %s', mission))
         return cb(false)
     end
 

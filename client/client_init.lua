@@ -1,11 +1,16 @@
 -- Client initialization: core setup, global state, and helper functions
 
 Core = exports.vorp_core:GetCore()
+BccUtils = exports['bcc-utils'].initiate()
 FeatherMenu = exports['feather-menu'].initiate()
 VorpMenu = exports.vorp_menu:GetMenuData() -- (Driving Menu Only)
 MiniGame = exports['bcc-minigames'].initiate()
----@type BCCTrainDebugLib
-DBG = BCCTrainDebug
+DBG = BccUtils.Debug:Get('bcc-train', Config.devMode.active)
+
+if DBG then
+    DBG:Enable()
+    DBG:Info('Train debug initialized')
+end
 
 -- Train global state
 MyTrain, TrainId = 0, 0
@@ -21,7 +26,7 @@ math.randomseed(GetGameTimer() + GetRandomIntInRange(1, 1000))
 -- Get train configuration by hash from all categories
 function GetTrainConfig(hash)
     if not hash then
-        DBG.Warning('GetTrainConfig called with nil hash')
+        DBG:Warning('GetTrainConfig called with nil hash')
         return nil
     end
 
@@ -31,7 +36,7 @@ function GetTrainConfig(hash)
                    (Special and Special[hash])
 
     if not config then
-        DBG.Warning(string.format('Train configuration not found for hash: %s', tostring(hash)))
+        DBG:Warning(string.format('Train configuration not found for hash: %s', tostring(hash)))
     end
 
     return config

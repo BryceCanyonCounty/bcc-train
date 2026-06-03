@@ -38,7 +38,7 @@ Core.Callback.Register('bcc-train:CanUseShowTrains', function(source, cb)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb(false)
     end
 
@@ -82,14 +82,14 @@ end)
 -- Check if train can be spawned based on regional limits
 Core.Callback.Register('bcc-train:CheckTrainSpawn', function(source, cb, stationName)
     if not stationName or type(stationName) ~= 'string' then
-        DBG.Error('CheckTrainSpawn called without valid station name')
+        DBG:Error('CheckTrainSpawn called without valid station name')
         return cb(false)
     end
 
     -- Get station configuration to determine region
     local station = Stations[stationName]
     if not station or not station.train then
-        DBG.Error(string.format('Station configuration not found: %s', tostring(stationName)))
+        DBG:Error(string.format('Station configuration not found: %s', tostring(stationName)))
         return cb(false)
     end
 
@@ -98,11 +98,11 @@ Core.Callback.Register('bcc-train:CheckTrainSpawn', function(source, cb, station
     local currentCount = SpawnedTrainsByRegion[region] or 0
     local limit = region == 'west' and Config.spawnLimits.west or Config.spawnLimits.east
 
-    DBG.Info(string.format('Regional spawn check - Station: %s, Region: %s, Current: %d, Limit: %d',
+    DBG:Info(string.format('Regional spawn check - Station: %s, Region: %s, Current: %d, Limit: %d',
         stationName, region, currentCount, limit))
 
     if currentCount >= limit then
-        DBG.Warning(string.format('Regional spawn limit reached for %s region (%d/%d)', region, currentCount, limit))
+        DBG:Warning(string.format('Regional spawn limit reached for %s region (%d/%d)', region, currentCount, limit))
         return cb(false)
     else
         return cb(true)
@@ -114,7 +114,7 @@ Core.Callback.Register('bcc-train:RequestActiveTrains', function(source, cb)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb({})
     end
 
@@ -134,7 +134,7 @@ Core.Callback.Register('bcc-train:RequestActiveTrains', function(source, cb)
             })
         end
     else
-        DBG.Warning('ActiveTrains is nil or not a table in RequestActiveTrains callback')
+        DBG:Warning('ActiveTrains is nil or not a table in RequestActiveTrains callback')
     end
 
     return cb(snapshot)
@@ -145,7 +145,7 @@ RegisterNetEvent('bcc-train:BridgeFallHandler', function(freshJoin)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
@@ -164,7 +164,7 @@ RegisterNetEvent('bcc-train:BridgeFallHandler', function(freshJoin)
 
     -- Validate config exists
     if not Config.bacchusBridge or not Config.bacchusBridge.item or not Config.bacchusBridge.itemAmount then
-        DBG.Error('Invalid bridge configuration')
+        DBG:Error('Invalid bridge configuration')
         return
     end
 
@@ -174,9 +174,9 @@ RegisterNetEvent('bcc-train:BridgeFallHandler', function(freshJoin)
         return
     end
 
-    DBG.Info(string.format('Consuming bridge item: src=%s item=%s qty=%s', tostring(src), tostring(Config.bacchusBridge.item), tostring(Config.bacchusBridge.itemAmount)))
+    DBG:Info(string.format('Consuming bridge item: src=%s item=%s qty=%s', tostring(src), tostring(Config.bacchusBridge.item), tostring(Config.bacchusBridge.itemAmount)))
     exports.vorp_inventory:subItem(src, Config.bacchusBridge.item, Config.bacchusBridge.itemAmount)
-    DBG.Info(string.format('Requested bridge removal: src=%s item=%s qty=%s', tostring(src), tostring(Config.bacchusBridge.item), tostring(Config.bacchusBridge.itemAmount)))
+    DBG:Info(string.format('Requested bridge removal: src=%s item=%s qty=%s', tostring(src), tostring(Config.bacchusBridge.item), tostring(Config.bacchusBridge.itemAmount)))
     BridgeDestroyed = true
     Core.NotifyRightTip(src, _U('runFromExplosion') .. Config.bacchusBridge.timer .. _U('seconds'), 4000)
 

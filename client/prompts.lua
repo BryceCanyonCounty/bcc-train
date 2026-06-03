@@ -8,23 +8,23 @@ MainPromptsStarted = false
 
 function StartMainPrompts()
     if MainPromptsStarted then
-        DBG.Success('Main Prompts already started')
+        DBG:Success('Main Prompts already started')
         return
     end
 
     if not MenuGroup or not BridgeGroup then
-        DBG.Error('MenuGroup or BridgeGroup not initialized')
+        DBG:Error('MenuGroup or BridgeGroup not initialized')
         return
     end
 
     if not Config or not Config.keys or not Config.keys.station or not Config.keys.ret or not Config.keys.bridge then
-        DBG.Error('Prompt keys are not configured properly')
+        DBG:Error('Prompt keys are not configured properly')
         return
     end
 
     MenuPrompt = UiPromptRegisterBegin()
     if not MenuPrompt or MenuPrompt == 0 then
-        DBG.Error('Failed to register MenuPrompt')
+        DBG:Error('Failed to register MenuPrompt')
         return
     end
     UiPromptSetControlAction(MenuPrompt, Config.keys.station)
@@ -36,7 +36,7 @@ function StartMainPrompts()
 
     ReturnPrompt = UiPromptRegisterBegin()
     if not ReturnPrompt or ReturnPrompt == 0 then
-        DBG.Error('Failed to register ReturnPrompt')
+        DBG:Error('Failed to register ReturnPrompt')
         return
     end
     UiPromptSetControlAction(ReturnPrompt, Config.keys.ret)
@@ -48,7 +48,7 @@ function StartMainPrompts()
 
     BridgePrompt = UiPromptRegisterBegin()
     if not BridgePrompt or BridgePrompt == 0 then
-        DBG.Error('Failed to register BridgePrompt')
+        DBG:Error('Failed to register BridgePrompt')
         return
     end
     UiPromptSetControlAction(BridgePrompt, Config.keys.bridge)
@@ -60,7 +60,7 @@ function StartMainPrompts()
     UiPromptRegisterEnd(BridgePrompt)
 
     MainPromptsStarted = true
-    DBG.Success('Main Prompts started successfully')
+    DBG:Success('Main Prompts started successfully')
 end
 
 -- Delivery prompt globals (also used across mission chunks)
@@ -70,23 +70,23 @@ DeliveryPromptStarted = false
 
 function StartDeliveryPrompt()
     if DeliveryPromptStarted then
-        DBG.Success('Delivery Prompt already started')
+        DBG:Success('Delivery Prompt already started')
         return
     end
 
     if not DeliveryGroup then
-        DBG.Error('DeliveryGroup not initialized')
+        DBG:Error('DeliveryGroup not initialized')
         return
     end
 
     if not Config or not Config.keys or not Config.keys.delivery then
-        DBG.Error('Delivery Prompt key is not configured properly')
+        DBG:Error('Delivery Prompt key is not configured properly')
         return
     end
 
     DeliveryPrompt = UiPromptRegisterBegin()
     if not DeliveryPrompt or DeliveryPrompt == 0 then
-        DBG.Error('Failed to register DeliveryPrompt')
+        DBG:Error('Failed to register DeliveryPrompt')
         return
     end
     UiPromptSetControlAction(DeliveryPrompt, Config.keys.delivery)
@@ -98,5 +98,5 @@ function StartDeliveryPrompt()
     UiPromptRegisterEnd(DeliveryPrompt)
 
     DeliveryPromptStarted = true
-    DBG.Success('Delivery Prompt started successfully')
+    DBG:Success('Delivery Prompt started successfully')
 end

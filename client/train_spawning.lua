@@ -2,19 +2,19 @@
 
 function LoadTrainCars(trainHash, isPreview)
     if not trainHash or trainHash == 0 then
-        DBG.Error('Invalid trainHash provided to LoadTrainCars')
+        DBG:Error('Invalid trainHash provided to LoadTrainCars')
         return false
     end
 
     local cars = Citizen.InvokeNative(0x635423d55ca84fc8, trainHash) -- GetNumCarsFromTrainConfig
     if cars == 0 then
-        DBG.Error(string.format('Invalid train configuration - no cars found for train hash: %s', tostring(trainHash)))
+        DBG:Error(string.format('Invalid train configuration - no cars found for train hash: %s', tostring(trainHash)))
         return false
     end
 
     -- Only log for actual spawning, not previews (reduce spam)
     if not isPreview then
-        DBG.Info(string.format('Loading %d car(s) for train hash: %s', cars, tostring(trainHash)))
+        DBG:Info(string.format('Loading %d car(s) for train hash: %s', cars, tostring(trainHash)))
     end
 
     for index = 0, cars - 1 do
@@ -29,13 +29,13 @@ function LoadTrainCars(trainHash, isPreview)
             while not HasModelLoaded(model) do
                 -- Check for timeout
                 if GetGameTimer() - startTime > timeout then
-                    DBG.Error(string.format('Timeout while loading train car model: %s', tostring(model)))
+                    DBG:Error(string.format('Timeout while loading train car model: %s', tostring(model)))
                     return false
                 end
                 Wait(10)
             end
         else
-            DBG.Warning(string.format('Invalid model for train car index: %d', index))
+            DBG:Warning(string.format('Invalid model for train car index: %d', index))
         end
     end
     return true
@@ -90,7 +90,7 @@ end
 function SpawnPreviewTrainWithDirection(hash, station, direction)
     local stationCfg = Stations[station]
     if not stationCfg then
-        DBG.Warning('Station config not found for: ' .. tostring(station))
+        DBG:Warning('Station config not found for: ' .. tostring(station))
         return nil
     end
 
@@ -100,7 +100,7 @@ function SpawnPreviewTrainWithDirection(hash, station, direction)
     end
 
     if not spawnCoords then
-        DBG.Warning('No spawn coordinates found for station: ' .. tostring(station))
+        DBG:Warning('No spawn coordinates found for station: ' .. tostring(station))
         return nil
     end
 
@@ -114,7 +114,7 @@ function SpawnPreviewTrainWithDirection(hash, station, direction)
     if train and DoesEntityExist(train) then
         return train
     else
-        DBG.Warning('Train creation failed or entity does not exist')
+        DBG:Warning('Train creation failed or entity does not exist')
     end
 
     return nil
@@ -123,21 +123,21 @@ end
 function SpawnTrain(myTrainData, trainCfg, direction, station) --credit to rsg_trains for some of the logic here
     -- Validate parameters
     if not trainCfg or not myTrainData then
-        DBG.Error('Invalid parameters provided to SpawnTrain')
+        DBG:Error('Invalid parameters provided to SpawnTrain')
         return
     end
 
     -- Use the train model from database - this should be a hex hash after migration
     local modelToSpawn = myTrainData.trainModel
     if not modelToSpawn then
-        DBG.Error('No train model available in database record')
+        DBG:Error('No train model available in database record')
         return
     end
 
     -- Convert hex hash to numeric for spawning
     local hash = tonumber(modelToSpawn)
     if not hash then
-        DBG.Error(string.format('Failed to convert hex hash to numeric: %s', tostring(modelToSpawn)))
+        DBG:Error(string.format('Failed to convert hex hash to numeric: %s', tostring(modelToSpawn)))
         return
     end
 
@@ -147,7 +147,7 @@ function SpawnTrain(myTrainData, trainCfg, direction, station) --credit to rsg_t
     SpawnedStation = station -- Track which station this train was spawned from
 
     if TrainId == 0 then
-        DBG.Error('Invalid train ID provided')
+        DBG:Error('Invalid train ID provided')
         return
     end
 
@@ -158,7 +158,7 @@ function SpawnTrain(myTrainData, trainCfg, direction, station) --credit to rsg_t
     MyTrain = CreateMissionTrain(hash, coords.x, coords.y, coords.z, direction, passengers, true, conductor)
 
     if MyTrain == 0 then
-        DBG.Error('Failed to create train entity')
+        DBG:Error('Failed to create train entity')
         return
     end
 

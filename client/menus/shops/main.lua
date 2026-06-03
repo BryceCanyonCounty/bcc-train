@@ -31,7 +31,7 @@ function ShopMenu(station)
     local MainPage = TrainShopMenu:RegisterPage('main:page')
 
     if not station or not Stations[station] then
-        DBG.Error('Invalid station provided to ShopMenu')
+        DBG:Error('Invalid station provided to ShopMenu')
         return
     end
 

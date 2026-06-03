@@ -5,7 +5,7 @@ exports('CheckIfTrainIsSpawned', function(source)
     local success, result = pcall(function()
         local playerId = source or source
         if not playerId then
-            DBG.Warning('CheckIfTrainIsSpawned called without valid source')
+            DBG:Warning('CheckIfTrainIsSpawned called without valid source')
             return false
         end
 
@@ -33,7 +33,7 @@ exports('GetTrainEntity', function(source)
     local success, result = pcall(function()
         local playerId = source or source
         if not playerId then
-            DBG.Warning('GetTrainEntity called without valid source')
+            DBG:Warning('GetTrainEntity called without valid source')
             return false
         end
 
@@ -45,7 +45,7 @@ exports('GetTrainEntity', function(source)
                     return train.netId
                 else
                     -- Entity no longer exists, should be cleaned up
-                    DBG.Warning(string.format('Player %s has active train record but entity does not exist', playerId))
+                    DBG:Warning(string.format('Player %s has active train record but entity does not exist', playerId))
                     return false
                 end
             end

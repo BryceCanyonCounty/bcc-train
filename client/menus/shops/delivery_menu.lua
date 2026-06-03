@@ -1,7 +1,7 @@
 function DeliveryMissionConfirmation(station)
     -- Validate station parameter
     if not station or not Stations[station] then
-        DBG.Error('Invalid station provided to DeliveryMissionConfirmation')
+        DBG:Error('Invalid station provided to DeliveryMissionConfirmation')
         return
     end
 
@@ -9,7 +9,7 @@ function DeliveryMissionConfirmation(station)
 
     -- Validate delivery locations config
     if not DeliveryLocations then
-        DBG.Error('Delivery locations configuration not found')
+        DBG:Error('Delivery locations configuration not found')
         return
     end
 
@@ -20,7 +20,7 @@ function DeliveryMissionConfirmation(station)
     end
 
     if #locations == 0 then
-        DBG.Error(string.format('No delivery locations found for station: %s', station))
+        DBG:Error(string.format('No delivery locations found for station: %s', station))
         Core.NotifyRightTip(_U('noDeliveryLocations'), 4000)
         return
     end
@@ -187,7 +187,7 @@ function DeliveryMissionConfirmation(station)
             for _, requiredItem in ipairs(destination.items) do
                 -- Validate requiredItem structure
                 if not requiredItem or not requiredItem.item or not requiredItem.quantity then
-                    DBG.Warning('Invalid required item configuration found, skipping')
+                    DBG:Warning('Invalid required item configuration found, skipping')
                     goto continue
                 end
 

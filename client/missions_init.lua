@@ -1,7 +1,7 @@
 function DeliveryMission(station, presetDestination)
     -- Validate station parameter
     if not station or not Stations[station] then
-        DBG.Error('Invalid station provided to DeliveryMission')
+        DBG:Error('Invalid station provided to DeliveryMission')
         return
     end
 
@@ -11,7 +11,7 @@ function DeliveryMission(station, presetDestination)
 
     -- Validate delivery locations config
     if not DeliveryLocations then
-        DBG.Error('Delivery locations configuration not found')
+        DBG:Error('Delivery locations configuration not found')
         return
     end
 
@@ -22,7 +22,7 @@ function DeliveryMission(station, presetDestination)
     end
 
     if #locations == 0 then
-        DBG.Error(string.format('No delivery locations found for station: %s', station))
+        DBG:Error(string.format('No delivery locations found for station: %s', station))
         Core.NotifyRightTip(_U('noDeliveryLocations'), 4000)
         return
     end

@@ -2,11 +2,15 @@
 
 Core = exports.vorp_core:GetCore()
 BccUtils = exports['bcc-utils'].initiate()
----@type BCCTrainDebugLib
-DBG = BCCTrainDebug
+Discord = BccUtils.Discord.setup(Config.webhook.link, Config.webhook.title, Config.webhook.avatar)
+DBG = BccUtils.Debug:Get('bcc-train', Config.devMode.active)
+
+if DBG then
+    DBG:Enable()
+    DBG:Info('Train debug initialized')
+end
 
 TrainRobberyAlert = exports['bcc-job-alerts']:RegisterAlert(Config.alerts.law)
-Discord = BccUtils.Discord.setup(Config.webhook.link, Config.webhook.title, Config.webhook.avatar)
 
 -- Shared state tables (accessible across all server files)
 ActiveTrains = {}
@@ -27,7 +31,7 @@ SpawnedTrainsByRegion = {
 -- Get train configuration by hex hash from all categories
 function GetTrainConfig(hexHash)
     if not hexHash then
-        DBG.Warning('GetTrainConfig called with nil hash')
+        DBG:Warning('GetTrainConfig called with nil hash')
         return nil
     end
 
@@ -37,7 +41,7 @@ function GetTrainConfig(hexHash)
         (Special and Special[hexHash])
 
     if not config then
-        DBG.Warning(string.format('Train configuration not found for hash: %s', tostring(hexHash)))
+        DBG:Warning(string.format('Train configuration not found for hash: %s', tostring(hexHash)))
     end
 
     return config
@@ -46,26 +50,26 @@ end
 -- Validate that a player owns a specific train
 function ValidateTrainOwnership(source, trainId)
     if not source or not trainId then
-        DBG.Error('ValidateTrainOwnership called with invalid parameters')
+        DBG:Error('ValidateTrainOwnership called with invalid parameters')
         return false
     end
 
     -- Validate trainId is a number to prevent SQL injection
     local numericTrainId = tonumber(trainId)
     if not numericTrainId or numericTrainId <= 0 then
-        DBG.Error('Invalid train ID format provided')
+        DBG:Error('Invalid train ID format provided')
         return false
     end
 
     local user = Core.getUser(source)
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(source)))
+        DBG:Error(string.format('User not found for source: %s', tostring(source)))
         return false
     end
 
     local character = user.getUsedCharacter
     if not character then
-        DBG.Error('Character not found for user')
+        DBG:Error('Character not found for user')
         return false
     end
 
@@ -75,7 +79,7 @@ function ValidateTrainOwnership(source, trainId)
         { character.charIdentifier, numericTrainId })
 
     if not result or not result[1] or result[1].count == 0 then
-        DBG.Warning(string.format('Player %s (char: %s) attempted to access train %s they do not own',
+        DBG:Warning(string.format('Player %s (char: %s) attempted to access train %s they do not own',
             tostring(source), tostring(character.charIdentifier), tostring(numericTrainId)))
         return false
     end
@@ -97,13 +101,13 @@ function CheckOperationCooldown(source, operation, cooldownSeconds)
     -- Get character identifier for proper cooldown tracking
     local user = Core.getUser(source)
     if not user then
-        DBG.Warning(string.format('Could not get user for cooldown check: source=%s', tostring(source)))
+        DBG:Warning(string.format('Could not get user for cooldown check: source=%s', tostring(source)))
         return false
     end
 
     local character = user.getUsedCharacter
     if not character then
-        DBG.Warning('Could not get character for cooldown check')
+        DBG:Warning('Could not get character for cooldown check')
         return false
     end
 
@@ -150,7 +154,7 @@ local function cleanupExpiredCooldowns()
     end
 
     if cleanedCount > 0 then
-        DBG.Info(string.format('Cleaned up %d expired cooldowns', cleanedCount))
+        DBG:Info(string.format('Cleaned up %d expired cooldowns', cleanedCount))
     end
 end
 
@@ -188,7 +192,7 @@ local function cleanupDisconnectedPlayer(source)
         ActiveMissions[source] = nil
     end
 
-    DBG.Info(string.format('Cleaned up tracking data for disconnected player: src=%s char=%s', 
+    DBG:Info(string.format('Cleaned up tracking data for disconnected player: src=%s char=%s', 
         tostring(source), tostring(charIdentifier or 'unknown')))
 end
 

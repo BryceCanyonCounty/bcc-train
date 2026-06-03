@@ -17,14 +17,14 @@ local function CreateTempCoordBlip(x, y, z, sprite, color, label)
     end
 
     if color then
-        DBG.Info('CreateTempCoordBlip: requested icon color key = ' .. tostring(color))
+        DBG:Info('CreateTempCoordBlip: requested icon color key = ' .. tostring(color))
     end
 
     if color and Config.BlipColors[color] then
-        DBG.Info('CreateTempCoordBlip: applying icon modifier = ' .. tostring(Config.BlipColors[color]))
+        DBG:Info('CreateTempCoordBlip: applying icon modifier = ' .. tostring(Config.BlipColors[color]))
         Citizen.InvokeNative(0x662D364ABF16DE2F, iconBlip, joaat(Config.BlipColors[color]))
     elseif Config.trainBlips and Config.trainBlips.color and Config.BlipColors[Config.trainBlips.color] then
-        DBG.Info('CreateTempCoordBlip: applying default trainBlips color = ' .. tostring(Config.BlipColors[Config.trainBlips.color]))
+        DBG:Info('CreateTempCoordBlip: applying default trainBlips color = ' .. tostring(Config.BlipColors[Config.trainBlips.color]))
         Citizen.InvokeNative(0x662D364ABF16DE2F, iconBlip, joaat(Config.BlipColors[Config.trainBlips.color]))
     end
 
@@ -41,13 +41,13 @@ local function CreateTempCoordBlip(x, y, z, sprite, color, label)
         radiusBlip = Citizen.InvokeNative(0x45F13B7E0A15C880, radiusHash, vec, radius) -- BlipAddForRadius
         -- Apply color modifier to radius blip if available
         if color and Config.BlipColors[color] then
-            DBG.Info('CreateTempCoordBlip: applying radius modifier from color key = ' .. tostring(color))
+            DBG:Info('CreateTempCoordBlip: applying radius modifier from color key = ' .. tostring(color))
             Citizen.InvokeNative(0x662D364ABF16DE2F, radiusBlip, joaat(Config.BlipColors[color]))
         elseif Config.trainBlips and Config.trainBlips.showTrains and Config.trainBlips.showTrains.tempColor and Config.BlipColors[Config.trainBlips.showTrains.tempColor] then
-            DBG.Info('CreateTempCoordBlip: applying radius modifier from tempColor = ' .. tostring(Config.trainBlips.showTrains.tempColor))
+            DBG:Info('CreateTempCoordBlip: applying radius modifier from tempColor = ' .. tostring(Config.trainBlips.showTrains.tempColor))
             Citizen.InvokeNative(0x662D364ABF16DE2F, radiusBlip, joaat(Config.BlipColors[Config.trainBlips.showTrains.tempColor]))
         else
-            DBG.Info('CreateTempCoordBlip: no radius color modifier available for color key = ' .. tostring(color))
+            DBG:Info('CreateTempCoordBlip: no radius color modifier available for color key = ' .. tostring(color))
         end
     end
 

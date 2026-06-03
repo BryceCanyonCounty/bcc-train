@@ -82,14 +82,14 @@ end)
 function OpenShopMenu(station)
     -- Validate station parameter
     if not station then
-        DBG.Error('Invalid station provided to OpenShopMenu')
+        DBG:Error('Invalid station provided to OpenShopMenu')
         return
     end
 
     -- Get station configuration
     local stationCfg = Stations[station]
     if not stationCfg or not stationCfg.train or not stationCfg.train.camera or not stationCfg.train.coords then
-        DBG.Error('Invalid station configuration for camera setup in OpenShopMenu')
+        DBG:Error('Invalid station configuration for camera setup in OpenShopMenu')
         return
     end
 

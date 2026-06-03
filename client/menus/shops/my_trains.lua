@@ -33,7 +33,7 @@ local function ResetTrainAndSpawn(myTrainData, trainCfg, direction, station)
 
             -- Cleanup failed after timeout
             if attempts >= maxAttempts then
-                DBG.Error('Train cleanup failed after 5 seconds. Cannot spawn new train safely.')
+                DBG:Error('Train cleanup failed after 5 seconds. Cannot spawn new train safely.')
                 Core.NotifyRightTip(_U('trainCleanupFailed'), 4000)
                 return
             end

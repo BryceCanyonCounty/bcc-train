@@ -5,7 +5,7 @@ local function CheckPlayerJob(charJob, jobGrade, shop)
     -- Validate shop configuration exists
     local stationCfg = Stations[shop]
     if not stationCfg or not stationCfg.shop or not stationCfg.shop.jobs then
-        DBG.Error(string.format('Invalid shop configuration for job check: %s', tostring(shop)))
+        DBG:Error(string.format('Invalid shop configuration for job check: %s', tostring(shop)))
         return false
     end
 
@@ -24,13 +24,13 @@ Core.Callback.Register('bcc-train:CheckJob', function(source, cb, shop)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb(false)
     end
 
     -- Validate shop parameter
     if not shop or type(shop) ~= 'string' then
-        DBG.Error(string.format('Invalid shop parameter received from source: %d', src))
+        DBG:Error(string.format('Invalid shop parameter received from source: %d', src))
         return cb(false)
     end
 
@@ -38,15 +38,15 @@ Core.Callback.Register('bcc-train:CheckJob', function(source, cb, shop)
     local charJob = character.job
     local jobGrade = character.jobGrade
 
-    DBG.Info(string.format('Checking job for user: charJob=%s, jobGrade=%s', charJob, jobGrade))
+    DBG:Info(string.format('Checking job for user: charJob=%s, jobGrade=%s', charJob, jobGrade))
 
     if not charJob or not CheckPlayerJob(charJob, jobGrade, shop) then
-        DBG.Warning('User does not have the required job or grade.')
+        DBG:Warning('User does not have the required job or grade.')
         Core.NotifyRightTip(src, _U('needJob'), 4000)
         return cb(false)
     end
 
-    DBG.Success('User has the required job and grade.')
+    DBG:Success('User has the required job and grade.')
     return cb(true)
 end)
 
@@ -56,7 +56,7 @@ Core.Callback.Register('bcc-train:GetJobFilteredTrains', function(source, cb, ca
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb({})
     end
 
@@ -106,7 +106,7 @@ Core.Callback.Register('bcc-train:GetMyTrains', function(source, cb)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb({})
     end
 
@@ -126,7 +126,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
@@ -140,35 +140,35 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
         return
     end
 
-    DBG.Info(string.format('BuyTrain called with trainHash: %s, clientCurrency: %s, trainName: %s, station: %s',
+    DBG:Info(string.format('BuyTrain called with trainHash: %s, clientCurrency: %s, trainName: %s, station: %s',
         tostring(trainHash), tostring(clientCurrency), tostring(trainName), tostring(station)))
 
     -- Validate trainHash parameter - should be hex format
     if not trainHash or type(trainHash) ~= 'string' then
-        DBG.Error('Invalid train hash provided for purchase')
+        DBG:Error('Invalid train hash provided for purchase')
         return
     end
 
     -- Validate hex hash format (0x followed by hex characters)
     if not trainHash:match('^0x[0-9A-Fa-f]+$') then
-        DBG.Error('Invalid train hash format - expected hex format (0x...)')
+        DBG:Error('Invalid train hash format - expected hex format (0x...)')
         return
     end
 
     -- Validate clientCurrency parameter if provided
     if clientCurrency and type(clientCurrency) ~= 'string' then
-        DBG.Error('Invalid client currency type provided')
+        DBG:Error('Invalid client currency type provided')
         return
     end
 
     if clientCurrency and clientCurrency ~= 'cash' and clientCurrency ~= 'gold' then
-        DBG.Error('Invalid client currency value - must be "cash" or "gold"')
+        DBG:Error('Invalid client currency value - must be "cash" or "gold"')
         return
     end
 
     -- Validate trainName parameter if provided
     if trainName and type(trainName) ~= 'string' then
-        DBG.Error('Invalid train name type provided')
+        DBG:Error('Invalid train name type provided')
         return
     end
 
@@ -178,7 +178,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
 
     if trainCount >= Config.maxTrains then
         Core.NotifyRightTip(src, _U('maxTrainsReached'), 4000)
-        DBG.Info(string.format('Player %s has reached max train limit (%d/%d)', character.charIdentifier, trainCount,
+        DBG:Info(string.format('Player %s has reached max train limit (%d/%d)', character.charIdentifier, trainCount,
             Config.maxTrains))
         return
     end
@@ -186,7 +186,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
     -- Get train configuration from hash first (needed for default name)
     local trainCfg = GetTrainConfig(trainHash)
     if not trainCfg then
-        DBG.Error(string.format('Train configuration not found for hash: %s', tostring(trainHash)))
+        DBG:Error(string.format('Train configuration not found for hash: %s', tostring(trainHash)))
         return
     end
 
@@ -202,7 +202,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
 
         if not hasRequiredJob then
             Core.NotifyRightTip(src, _U('jobRequiredForTrain'), 4000)
-            DBG.Warning(string.format('Player %s attempted to buy job-restricted train %s without required job',
+            DBG:Warning(string.format('Player %s attempted to buy job-restricted train %s without required job',
                 character.charIdentifier, trainHash))
             return
         end
@@ -219,19 +219,19 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
         -- If sanitization results in empty string, keep the default train label
     end
 
-    DBG.Info(string.format('Found train configuration: %s', json.encode(trainCfg)))
+    DBG:Info(string.format('Found train configuration: %s', json.encode(trainCfg)))
 
     local trainPrice = trainCfg.price
 
     -- Validate that price is in table format (cash/gold structure)
     if not trainPrice or type(trainPrice) ~= 'table' then
-        DBG.Error('Invalid price configuration - table format required with cash/gold properties')
+        DBG:Error('Invalid price configuration - table format required with cash/gold properties')
         return
     end
 
     -- Get station currency configuration
     if not station or not Stations[station] then
-        DBG.Error('Invalid station provided for train purchase')
+        DBG:Error('Invalid station provided for train purchase')
         return
     end
 
@@ -244,7 +244,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
     if stationCurrencyType == 0 then
         -- Cash only
         if not trainPrice.cash then
-            DBG.Error('Invalid price configuration for cash-only mode - missing cash property')
+            DBG:Error('Invalid price configuration for cash-only mode - missing cash property')
             return
         end
         price = trainPrice.cash
@@ -252,7 +252,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
     elseif stationCurrencyType == 1 then
         -- Gold only
         if not trainPrice.gold then
-            DBG.Error('Invalid price configuration for gold-only mode - missing gold property')
+            DBG:Error('Invalid price configuration for gold-only mode - missing gold property')
             return
         end
         price = trainPrice.gold
@@ -261,7 +261,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
         -- Both currencies - use client selection (no fallback)
         if clientCurrency == 'gold' then
             if not trainPrice.gold then
-                DBG.Error('Train does not support gold payment')
+                DBG:Error('Train does not support gold payment')
                 Core.NotifyRightTip(src, _U('cannotPurchaseWithGold'), 4000)
                 return
             end
@@ -269,7 +269,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
             currency = 1
         elseif clientCurrency == 'cash' then
             if not trainPrice.cash then
-                DBG.Error('Train does not support cash payment')
+                DBG:Error('Train does not support cash payment')
                 Core.NotifyRightTip(src, _U('cannotPurchaseWithCash'), 4000)
                 return
             end
@@ -278,7 +278,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
         else
             -- Invalid currency selection - default to cash but validate it exists
             if not trainPrice.cash then
-                DBG.Error('Invalid currency selection and no cash price available')
+                DBG:Error('Invalid currency selection and no cash price available')
                 Core.NotifyRightTip(src, _U('invalidPaymentMethod'), 4000)
                 return
             end
@@ -286,7 +286,7 @@ RegisterNetEvent('bcc-train:BuyTrain', function(trainHash, clientCurrency, train
             currency = 0
         end
     else
-        DBG.Error(string.format('Invalid currency configuration for station %s: %s', tostring(station),
+        DBG:Error(string.format('Invalid currency configuration for station %s: %s', tostring(station),
             tostring(stationCurrencyType)))
         return
     end
@@ -335,7 +335,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return
     end
 
@@ -349,40 +349,40 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
         return
     end
 
-    DBG.Info(string.format('SellTrain called with trainModel: %s, clientCurrency: %s, station: %s',
+    DBG:Info(string.format('SellTrain called with trainModel: %s, clientCurrency: %s, station: %s',
         tostring(myTrainData and myTrainData.trainModel), tostring(clientCurrency), tostring(station)))
 
     -- Validate myTrainData parameter
     if not myTrainData or type(myTrainData) ~= 'table' then
-        DBG.Error('Invalid train data provided for sale')
+        DBG:Error('Invalid train data provided for sale')
         return
     end
 
     if not myTrainData.trainModel or type(myTrainData.trainModel) ~= 'string' then
-        DBG.Error('Invalid train model in train data')
+        DBG:Error('Invalid train model in train data')
         return
     end
 
     if not myTrainData.trainid then
-        DBG.Error('Missing train ID in train data')
+        DBG:Error('Missing train ID in train data')
         return
     end
 
     -- Validate trainid is numeric
     local numericTrainId = tonumber(myTrainData.trainid)
     if not numericTrainId or numericTrainId <= 0 then
-        DBG.Error('Invalid train ID format')
+        DBG:Error('Invalid train ID format')
         return
     end
 
     -- Validate clientCurrency parameter
     if clientCurrency and type(clientCurrency) ~= 'string' then
-        DBG.Error('Invalid client currency type provided')
+        DBG:Error('Invalid client currency type provided')
         return
     end
 
     if clientCurrency and clientCurrency ~= 'cash' and clientCurrency ~= 'gold' then
-        DBG.Error('Invalid client currency value - must be "cash" or "gold"')
+        DBG:Error('Invalid client currency value - must be "cash" or "gold"')
         return
     end
 
@@ -396,7 +396,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
     for _, train in ipairs(ActiveTrains) do
         if train.id == numericTrainId and train.owner == src then
             Core.NotifyRightTip(src, _U('cannotSellSpawnedTrain'), 4000)
-            DBG.Warning(string.format('Player %s attempted to sell active train ID %d', character.charIdentifier, numericTrainId))
+            DBG:Warning(string.format('Player %s attempted to sell active train ID %d', character.charIdentifier, numericTrainId))
             return
         end
     end
@@ -405,20 +405,20 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
     local trainCfg = GetTrainConfig(trainModel)
 
     if not trainCfg then
-        DBG.Error(string.format('Train configuration not found for model: %s', trainModel))
+        DBG:Error(string.format('Train configuration not found for model: %s', trainModel))
         return
     end
 
     -- Validate that price is in table format (cash/gold structure)
     local trainPrice = trainCfg.price
     if not trainPrice or type(trainPrice) ~= 'table' then
-        DBG.Error('Invalid price configuration - table format required with cash/gold properties')
+        DBG:Error('Invalid price configuration - table format required with cash/gold properties')
         return
     end
 
     -- Get station currency configuration
     if not station or not Stations[station] then
-        DBG.Error('Invalid station provided for train sale')
+        DBG:Error('Invalid station provided for train sale')
         return
     end
 
@@ -432,7 +432,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
     if stationCurrencyType == 0 then
         -- Cash only
         if not trainPrice.cash then
-            DBG.Error('Invalid price configuration for cash-only mode - missing cash property')
+            DBG:Error('Invalid price configuration for cash-only mode - missing cash property')
             return
         end
         sellPrice = math.floor(sellMultiplier * trainPrice.cash)
@@ -440,7 +440,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
     elseif stationCurrencyType == 1 then
         -- Gold only
         if not trainPrice.gold then
-            DBG.Error('Invalid price configuration for gold-only mode - missing gold property')
+            DBG:Error('Invalid price configuration for gold-only mode - missing gold property')
             return
         end
         sellPrice = math.floor(sellMultiplier * trainPrice.gold)
@@ -449,7 +449,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
         -- Both currencies - use client selection (no fallback)
         if clientCurrency == 'gold' then
             if not trainPrice.gold then
-                DBG.Error('Train does not support gold payment')
+                DBG:Error('Train does not support gold payment')
                 Core.NotifyRightTip(src, _U('cannotSellForGold'), 4000)
                 return
             end
@@ -457,7 +457,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
             currency = 1
         elseif clientCurrency == 'cash' then
             if not trainPrice.cash then
-                DBG.Error('Train does not support cash payment')
+                DBG:Error('Train does not support cash payment')
                 Core.NotifyRightTip(src, _U('cannotSellForCash'), 4000)
                 return
             end
@@ -466,7 +466,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
         else
             -- Invalid currency selection - default to cash but validate it exists
             if not trainPrice.cash then
-                DBG.Error('Invalid currency selection and no cash price available')
+                DBG:Error('Invalid currency selection and no cash price available')
                 Core.NotifyRightTip(src, _U('invalidPaymentMethod'), 4000)
                 return
             end
@@ -474,7 +474,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
             currency = 0
         end
     else
-        DBG.Error(string.format('Invalid currency configuration for station %s: %s', tostring(station),
+        DBG:Error(string.format('Invalid currency configuration for station %s: %s', tostring(station),
             tostring(stationCurrencyType)))
         return
     end
@@ -484,7 +484,7 @@ RegisterNetEvent('bcc-train:SellTrain', function(myTrainData, clientCurrency, st
     -- Only delete the train from database after successful payment
     MySQL.query.await('DELETE FROM `bcc_player_trains` WHERE `charidentifier` = ? AND `trainid` = ?',
         { character.charIdentifier, myTrainData.trainid })
-    DBG.Info(string.format('Deleted train ID %s for character %s', tostring(myTrainData.trainid),
+    DBG:Info(string.format('Deleted train ID %s for character %s', tostring(myTrainData.trainid),
         tostring(character.charIdentifier)))
 
     local currencyText = currency == 0 and 'Cash' or 'Gold'
@@ -512,21 +512,21 @@ Core.Callback.Register('bcc-train:IsTrainSpawned', function(source, cb, trainId)
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb(false)
     end
 
     -- Validate trainId parameter
     local numericTrainId = tonumber(trainId)
     if not numericTrainId or numericTrainId <= 0 then
-        DBG.Error('Invalid train ID provided for spawn check')
+        DBG:Error('Invalid train ID provided for spawn check')
         return cb(false)
     end
 
     -- Check if train is currently spawned
     for _, train in ipairs(ActiveTrains) do
         if train.id == numericTrainId and train.owner == src then
-            DBG.Info(string.format('Train ID %d is currently spawned for player %s', numericTrainId, src))
+            DBG:Info(string.format('Train ID %d is currently spawned for player %s', numericTrainId, src))
             return cb(true)
         end
     end
@@ -540,14 +540,14 @@ Core.Callback.Register('bcc-train:CheckTrainInventory', function(source, cb, tra
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb(false)
     end
 
     -- Validate trainId parameter
     local numericTrainId = tonumber(trainId)
     if not numericTrainId or numericTrainId <= 0 then
-        DBG.Error('Invalid train ID provided for inventory check')
+        DBG:Error('Invalid train ID provided for inventory check')
         return cb(false)
     end
 
@@ -560,7 +560,7 @@ Core.Callback.Register('bcc-train:CheckTrainInventory', function(source, cb, tra
     local inventoryId = 'Train_' .. tostring(numericTrainId) .. '_bcc-traininv'
     local isRegistered = exports.vorp_inventory:isCustomInventoryRegistered(inventoryId)
     
-    DBG.Info(string.format('Inventory check for train ID %d: %s', numericTrainId, tostring(isRegistered)))
+    DBG:Info(string.format('Inventory check for train ID %d: %s', numericTrainId, tostring(isRegistered)))
     return cb(isRegistered)
 end)
 
@@ -570,7 +570,7 @@ Core.Callback.Register('bcc-train:RenameTrain', function(source, cb, trainId, ne
     local user = Core.getUser(src)
 
     if not user then
-        DBG.Error(string.format('User not found for source: %s', tostring(src)))
+        DBG:Error(string.format('User not found for source: %s', tostring(src)))
         return cb(false)
     end
 
@@ -584,13 +584,13 @@ Core.Callback.Register('bcc-train:RenameTrain', function(source, cb, trainId, ne
 
     -- Validate trainId parameter
     if not trainId or type(trainId) ~= 'number' then
-        DBG.Error('Invalid train ID provided for rename')
+        DBG:Error('Invalid train ID provided for rename')
         return cb(false)
     end
 
     -- Validate newName parameter
     if not newName or type(newName) ~= 'string' then
-        DBG.Error('Invalid train name provided for rename')
+        DBG:Error('Invalid train name provided for rename')
         return cb(false)
     end
 
@@ -607,14 +607,14 @@ Core.Callback.Register('bcc-train:RenameTrain', function(source, cb, trainId, ne
         'SELECT trainModel FROM `bcc_player_trains` WHERE `charidentifier` = ? AND `trainid` = ?',
         { character.charIdentifier, trainId })
     if not trainData or #trainData == 0 then
-        DBG.Error('Train not found in database')
+        DBG:Error('Train not found in database')
         return cb(false)
     end
 
     local trainModel = trainData[1].trainModel
     local trainCfg = GetTrainConfig(trainModel)
     if not trainCfg then
-        DBG.Error(string.format('Train configuration not found for model: %s', tostring(trainModel)))
+        DBG:Error(string.format('Train configuration not found for model: %s', tostring(trainModel)))
         return cb(false)
     end
 
@@ -636,14 +636,14 @@ Core.Callback.Register('bcc-train:RenameTrain', function(source, cb, trainId, ne
 
     if success then
         Core.NotifyRightTip(src, _U('trainRenamed'), 4000)
-        DBG.Info(string.format('Player %s renamed train ID %d to: %s', character.charIdentifier, trainId, finalTrainName))
+        DBG:Info(string.format('Player %s renamed train ID %d to: %s', character.charIdentifier, trainId, finalTrainName))
         -- Return updated train list to avoid separate query
         local myTrains = MySQL.query.await('SELECT * FROM `bcc_player_trains` WHERE `charidentifier` = ?',
             { character.charIdentifier })
         return cb(myTrains or {})
     else
         Core.NotifyRightTip(src, _U('failedRename'), 4000)
-        DBG.Error(string.format('Failed to rename train ID %d for player %s', trainId, character.charIdentifier))
+        DBG:Error(string.format('Failed to rename train ID %d for player %s', trainId, character.charIdentifier))
         return cb(false)
     end
 end)

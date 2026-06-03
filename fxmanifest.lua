@@ -8,7 +8,6 @@ author 'BCC Team'
 shared_scripts {
     'configs/*.lua',
     'configs/trains/*.lua',
-    'debug_init.lua',
     'locale.lua',
     'languages/*.lua'
 }
@@ -41,4 +40,4 @@ server_scripts {
     'server/exports.lua'
 }
 
-version '2.0.2'
+version '2.1.0'

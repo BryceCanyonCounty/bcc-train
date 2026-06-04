@@ -1,14 +1,7 @@
 -- Server initialization: core setup, helper functions, and shared state
-
+-- BccUtils and DBG initialized in database.lua, which is loaded before this file
 Core = exports.vorp_core:GetCore()
-BccUtils = exports['bcc-utils'].initiate()
 Discord = BccUtils.Discord.setup(Config.webhook.link, Config.webhook.title, Config.webhook.avatar)
-DBG = BccUtils.Debug:Get('bcc-train', Config.devMode.active)
-
-if DBG then
-    DBG:Enable()
-    DBG:Info('Train debug initialized')
-end
 
 TrainRobberyAlert = exports['bcc-job-alerts']:RegisterAlert(Config.alerts.law)
 

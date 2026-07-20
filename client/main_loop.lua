@@ -12,6 +12,23 @@ CreateThread(function()
             goto END
         end
 
+        if Config.bacchusBridge and Config.bacchusBridge.enabled then
+            local bridgeDistance = #(playerCoords - Config.bacchusBridge.coords)
+            if bridgeDistance <= 2.0 then
+                sleep = 0
+                UiPromptSetActiveGroupThisFrame(
+                    BridgeGroup,
+                    CreateVarString(10, 'LITERAL_STRING', Config.bacchusBridge.prompt or ''),
+                    1, 0, 0, 0
+                )
+
+                if Citizen.InvokeNative(0xE0F65F0640EF0617, BridgePrompt) then -- PromptHasHoldModeCompleted
+                    Wait(500)
+                    TriggerServerEvent('bcc-train:BridgeFallHandler', false)
+                end
+            end
+        end
+
         for station, stationCfg in pairs(Stations) do
             local distance = #(playerCoords - stationCfg.npc.coords)
             IsShopClosed = IsTrainShopClosed(stationCfg)

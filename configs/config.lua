@@ -97,6 +97,7 @@ Config = {
     bacchusBridge = {
         enabled = true,                           -- Blow Up Bacchus Bridge!
         coords = vector3(492.01, 1774.41, 182.5), -- Coords of Location to Place Dynamite
+        prompt = 'Bacchus Bridge',                -- Text Below the Bridge Prompt Button
         item = 'dynamite',                        -- Item Name in Database
         itemAmount = 2,                           -- Number of Items Needed
         timer = 30,                               -- Time in Seconds Before Explosion

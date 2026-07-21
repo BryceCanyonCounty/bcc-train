@@ -56,7 +56,7 @@ function DeliveryMission(station, presetDestination)
     end
 
     -- Check if player has required items for this destination
-    if destination.requireItem and destination.items then
+    if not presetDestination and destination.requireItem and destination.items then
         local itemCheck = Core.Callback.TriggerAwait('bcc-train:CheckDeliveryItems', destination)
         if not itemCheck.hasItems then
             local missingText = _U('missingDeliveryItems')
